@@ -7,24 +7,24 @@ using IOTLinkAPI.Platform.HomeAssistant;
 using LibreHardwareMonitor.Hardware;
 using Timer = System.Timers.Timer;
 
-namespace TemperatureMonitor
+namespace Monitor
 {
-    public class TemperatureService : ServiceAddon
+    public class MonitorService : ServiceAddon
     {
         private Timer _monitorTimer;
-        private string _tempCPUTopic, _tempGPUTopic, _tempDriveTopic;
+        private string _tempGPUTopic, _tempDriveTopic;
         private string _cpuPowerPackage, _cpuPowerCores, _cpuPowerGraphics, _cpuPowerMemory, _cpuPowerAll;
+        private string _cpuTemperatureCore, _cpuTemperatureMax, _cpuTemperatureAverage, _cpuTemperaturePackage;
+        private string _cpuClockCore, _cpuClockBusSpeed;
 
         public override void Init(IAddonManager addonManager)
         {
             base.Init(addonManager);
             GetSensors();
 
-            _tempCPUTopic = "stats/cpu/temperature";
             _tempGPUTopic = "stats/gpu/temperature";
             _tempDriveTopic = "stats/drive/temperature";
 
-            GetManager().PublishDiscoveryMessage(this, _tempCPUTopic, "CPU", DiscoveryOptionsTemperature());
             GetManager().PublishDiscoveryMessage(this, _tempGPUTopic, "GPU", DiscoveryOptionsTemperature());
             GetManager().PublishDiscoveryMessage(this, _tempDriveTopic, "Drive", DiscoveryOptionsTemperature());
 
@@ -39,6 +39,28 @@ namespace TemperatureMonitor
             GetManager().PublishDiscoveryMessage(this, _cpuPowerGraphics, "CPU", DiscoveryOptionsPower());
             GetManager().PublishDiscoveryMessage(this, _cpuPowerMemory, "CPU", DiscoveryOptionsPower());
             GetManager().PublishDiscoveryMessage(this, _cpuPowerAll, "CPU", DiscoveryOptionsPower());
+
+            _cpuTemperatureCore = "stats/cpu/temperatures/core{0}";
+            _cpuTemperatureMax = "stats/cpu/temperatures/max";
+            _cpuTemperatureAverage = "stats/cpu/temperatures/average";
+            _cpuTemperaturePackage = "stats/cpu/temperatures/package";
+
+            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, 1), "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, 2), "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, 3), "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, 4), "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, _cpuTemperatureMax, "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, _cpuTemperatureAverage, "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, _cpuTemperaturePackage, "CPU", DiscoveryOptionsTemperature());
+
+            _cpuClockCore = "stats/cpu/clocks/core{0}";
+            _cpuClockBusSpeed = "stats/cpu/clocks/bus-speed";
+
+            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, 1), "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, 2), "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, 3), "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, 4), "CPU", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, _cpuClockBusSpeed, "CPU", DiscoveryOptionsTemperature());
 
             _monitorTimer = new Timer();
             _monitorTimer.Interval = 10000;
@@ -72,11 +94,46 @@ namespace TemperatureMonitor
 
         private void TimerElapsed(object sender, ElapsedEventArgs e)
         {
+            // Clocks
             try
             {
-                var temperatureCPU = GetTemperatureCPU();
-                LoggerHelper.Info($"Sending {temperatureCPU} celsius");
-                GetManager().PublishMessage(this, _tempCPUTopic, temperatureCPU.ToString());
+                for (int core_num = 1; core_num < 5; core_num++)
+                {
+                    var cpuClockCore = CPU.Clocks.GetCore(core_num);
+                    LoggerHelper.Info($"Sending {cpuClockCore} MHz");
+                    GetManager().PublishMessage(this, string.Format(_cpuClockCore, core_num), cpuClockCore.ToString());
+                }
+
+                var cpuBusSpeed = CPU.Clocks.GetBusSpeed();
+                LoggerHelper.Info($"Sending {_cpuClockBusSpeed} MHz");
+                GetManager().PublishMessage(this, _cpuClockBusSpeed, cpuBusSpeed.ToString());
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send cpu clocks " + exception);
+            }
+
+            // Temperatures
+            try
+            {
+                for (int core_num = 1; core_num < 5; core_num++)
+                {
+                    var cpuTempCore = CPU.Temperatures.GetCore(core_num);
+                    LoggerHelper.Info($"Sending {cpuTempCore} celsius");
+                    GetManager().PublishMessage(this, string.Format(_cpuTemperatureCore, core_num), cpuTempCore.ToString());
+                }
+
+                var cpuTempPackage = CPU.Temperatures.GetPackage();
+                LoggerHelper.Info($"Sending {cpuTempPackage} celsius");
+                GetManager().PublishMessage(this, _cpuTemperaturePackage, cpuTempPackage.ToString());
+
+                var cpuTempMax = CPU.Temperatures.GetMax();
+                LoggerHelper.Info($"Sending {cpuTempMax} celsius");
+                GetManager().PublishMessage(this, _cpuTemperatureMax, cpuTempMax.ToString());
+
+                var cpuTempAverage = CPU.Temperatures.GetAverage();
+                LoggerHelper.Info($"Sending {cpuTempAverage} celsius");
+                GetManager().PublishMessage(this, _cpuTemperatureAverage, cpuTempAverage.ToString());
 
                 var temperatureGPU = GetTemperatureGPU();
                 LoggerHelper.Info($"Sending {temperatureGPU} celsius");
@@ -87,22 +144,23 @@ namespace TemperatureMonitor
                 LoggerHelper.Error("Failed to send temperature " + exception);
             }
 
+            // Powers
             try
             {
                 // CPU
-                var cpuPowerPackage = CPUPowers.GetPackage();
+                var cpuPowerPackage = CPU.Powers.GetPackage();
                 LoggerHelper.Info($"Sending {cpuPowerPackage} watt");
                 GetManager().PublishMessage(this, _cpuPowerPackage, cpuPowerPackage.ToString());
 
-                var cpuPowerCores = CPUPowers.GetCores();
+                var cpuPowerCores = CPU.Powers.GetCores();
                 LoggerHelper.Info($"Sending {cpuPowerCores} watt");
                 GetManager().PublishMessage(this, _cpuPowerCores, cpuPowerCores.ToString());
 
-                var cpuPowerGraphics = CPUPowers.GetGraphics();
+                var cpuPowerGraphics = CPU.Powers.GetGraphics();
                 LoggerHelper.Info($"Sending {cpuPowerGraphics} watt");
                 GetManager().PublishMessage(this, _cpuPowerGraphics, cpuPowerGraphics.ToString());
 
-                var cpuPowerMemory = CPUPowers.GetMemory();
+                var cpuPowerMemory = CPU.Powers.GetMemory();
                 LoggerHelper.Info($"Sending {cpuPowerMemory} watt");
                 GetManager().PublishMessage(this, _cpuPowerMemory, cpuPowerMemory.ToString());
 
@@ -113,32 +171,6 @@ namespace TemperatureMonitor
             catch (Exception exception)
             {
                 LoggerHelper.Error("Failed to send powers " + exception);
-            }
-        }
-
-
-        public static int GetTemperatureCPU()
-        {
-            Computer computer = new Computer
-            {
-                IsCpuEnabled = true
-            };
-
-            computer.Open();
-            try
-            {
-                var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                var temperatureSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
-                var cpuTempSensor = temperatureSensors?.FirstOrDefault(t => t.Name.ToLower() == "core average") ??
-                                    temperatureSensors?.First();
-                if (cpuTempSensor?.Value != null)
-                    return (int)cpuTempSensor.Value;
-                return 0;
-            }
-            catch (Exception e)
-            {
-                LoggerHelper.Error("Failed to read cpu temperature", e);
-                return 0;
             }
         }
 

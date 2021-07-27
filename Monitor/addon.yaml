@@ -2,8 +2,8 @@
 # Addon Information
 ########################################################################
 enabled: true
-id: TemperatureMonitor
-name: Temperature Monitor
-file: TemperatureMonitor.dll
+id: Monitor
+name: Monitor
+file: Monitor.dll
 minApiVersion: 2.2.0
 maxApiVersion: 

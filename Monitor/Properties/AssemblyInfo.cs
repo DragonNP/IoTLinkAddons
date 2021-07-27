@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Общие сведения об этой сборке предоставляются следующим набором
 // набора атрибутов. Измените значения этих атрибутов для изменения сведений,
 // связанные со сборкой.
-[assembly: AssemblyTitle("TemperatureMonitor")]
+[assembly: AssemblyTitle("Monitor")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("TemperatureMonitor")]
+[assembly: AssemblyProduct("Monitor")]
 [assembly: AssemblyCopyright("Copyright ©  2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // Следующий GUID служит для идентификации библиотеки типов, если этот проект будет видимым для COM
-[assembly: Guid("1e193886-f471-4bb4-abb9-7eb7e4bbec99")]
+[assembly: Guid("88ef3bbf-fb51-408a-8fc8-bef74cb8c898")]
 
 // Сведения о версии сборки состоят из указанных ниже четырех значений:
 //
