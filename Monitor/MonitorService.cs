@@ -124,15 +124,15 @@ namespace Monitor
                 if (!_isCPUClocks)
                     return;
 
+                LoggerHelper.Info($"Sending CPU clocks");
+
                 for (int core_num = 1; core_num < 5; core_num++)
                 {
                     var cpuClockCore = CPU.Clocks.GetCore(core_num);
-                    LoggerHelper.Info($"Sending {cpuClockCore} MHz");
                     GetManager().PublishMessage(this, string.Format(_cpuClockCore, core_num), cpuClockCore.ToString());
                 }
 
                 var cpuBusSpeed = CPU.Clocks.GetBusSpeed();
-                LoggerHelper.Info($"Sending {cpuBusSpeed} MHz");
                 GetManager().PublishMessage(this, _cpuClockBusSpeed, cpuBusSpeed.ToString());
             }
             catch (Exception exception)
@@ -146,24 +146,22 @@ namespace Monitor
                 if (!_isCPUTemperatures)
                     return;
 
+                LoggerHelper.Info($"Sending CPU temperature");
+
                 for (int core_num = 1; core_num < 5; core_num++)
                 {
                     var cpuTempCore = CPU.Temperatures.GetCore(core_num);
-                    LoggerHelper.Info($"Sending {cpuTempCore} celsius");
                     GetManager().PublishMessage(this, string.Format(_cpuTemperatureCore, core_num), cpuTempCore.ToString());
                 }
 
                 var cpuTempPackage = CPU.Temperatures.GetPackage();
-                LoggerHelper.Info($"Sending {cpuTempPackage} celsius");
-                GetManager().PublishMessage(this, _cpuTemperaturePackage, cpuTempPackage.ToString());
-
                 var cpuTempMax = CPU.Temperatures.GetMax();
-                LoggerHelper.Info($"Sending {cpuTempMax} celsius");
-                GetManager().PublishMessage(this, _cpuTemperatureMax, cpuTempMax.ToString());
-
                 var cpuTempAverage = CPU.Temperatures.GetAverage();
-                LoggerHelper.Info($"Sending {cpuTempAverage} celsius");
+
+                GetManager().PublishMessage(this, _cpuTemperaturePackage, cpuTempPackage.ToString());
+                GetManager().PublishMessage(this, _cpuTemperatureMax, cpuTempMax.ToString());
                 GetManager().PublishMessage(this, _cpuTemperatureAverage, cpuTempAverage.ToString());
+
 
             }
             catch (Exception exception)
@@ -177,15 +175,15 @@ namespace Monitor
                 if (!_isCPULoad)
                     return;
 
+                LoggerHelper.Info($"Sending CPU load");
+
                 for (int core_num = 1; core_num < 5; core_num++)
                 {
                     var cpuLoadCore = CPU.Load.GetCore(core_num);
-                    LoggerHelper.Info($"Sending {cpuLoadCore} %");
                     GetManager().PublishMessage(this, string.Format(_cpuLoadCore, core_num), cpuLoadCore.ToString());
                 }
 
                 var cpuLoadTotal = CPU.Load.GetTotal();
-                LoggerHelper.Info($"Sending {cpuLoadTotal} %");
                 GetManager().PublishMessage(this, _cpuLoadTotal, cpuLoadTotal.ToString());
             }
             catch (Exception exception)
@@ -199,17 +197,13 @@ namespace Monitor
                 if (!_isCPUPowers)
                     return;
 
+                LoggerHelper.Info($"Sending CPU powers");
+
                 var cpuPowerPackage = CPU.Powers.GetPackage();
                 var cpuPowerCores = CPU.Powers.GetCores();
                 var cpuPowerGraphics = CPU.Powers.GetGraphics();
                 var cpuPowerMemory = CPU.Powers.GetMemory();
                 var cpuPowerAll = cpuPowerPackage + cpuPowerCores + cpuPowerGraphics + cpuPowerMemory;
-
-                LoggerHelper.Info($"Sending {cpuPowerPackage} watt");
-                LoggerHelper.Info($"Sending {cpuPowerCores} watt");
-                LoggerHelper.Info($"Sending {cpuPowerGraphics} watt");
-                LoggerHelper.Info($"Sending {cpuPowerMemory} watt");
-                LoggerHelper.Info($"Sending {cpuPowerAll} watt");
 
                 GetManager().PublishMessage(this, _cpuPowerPackage, cpuPowerPackage.ToString());
                 GetManager().PublishMessage(this, _cpuPowerCores, cpuPowerCores.ToString());
@@ -225,8 +219,10 @@ namespace Monitor
             // GPU Temperatures
             try
             {
+                LoggerHelper.Info($"Sending GPU temperatures");
+
                 var temperatureGPU = GetTemperatureGPU();
-                LoggerHelper.Info($"Sending {temperatureGPU} celsius");
+
                 GetManager().PublishMessage(this, _tempGPUTopic, temperatureGPU.ToString());
             }
             catch (Exception exception)
