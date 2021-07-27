@@ -12,55 +12,46 @@ namespace Monitor
     public class MonitorService : ServiceAddon
     {
         private Timer _monitorTimer;
-        private string _tempGPUTopic, _tempDriveTopic;
-        private string _cpuPowerPackage, _cpuPowerCores, _cpuPowerGraphics, _cpuPowerMemory, _cpuPowerAll;
-        private string _cpuTemperatureCore, _cpuTemperatureMax, _cpuTemperatureAverage, _cpuTemperaturePackage;
+
+        private string _tempGPUTopic;
+
         private string _cpuClockCore, _cpuClockBusSpeed;
+        private string _cpuTemperatureCore, _cpuTemperatureMax, _cpuTemperatureAverage, _cpuTemperaturePackage;
+        private string _cpuLoadCore, _cpuLoadTotal;
+        private string _cpuPowerPackage, _cpuPowerCores, _cpuPowerGraphics, _cpuPowerMemory, _cpuPowerAll;
+        private bool _isCPUName, _isCPUClocks, _isCPUTemperatures, _isCPULoad, _isCPUPowers;
 
         public override void Init(IAddonManager addonManager)
         {
             base.Init(addonManager);
-            GetSensors();
+
+            _isCPUName = true;
+
+            InitCPUClocks();
+            InitCPUTemperatures();
+            InitCPULoad();
+            InitCPUPowers();
+
+            //GetSensors();
 
             _tempGPUTopic = "stats/gpu/temperature";
-            _tempDriveTopic = "stats/drive/temperature";
 
-            GetManager().PublishDiscoveryMessage(this, _tempGPUTopic, "GPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, _tempDriveTopic, "Drive", DiscoveryOptionsTemperature());
+            GetManager().PublishDiscoveryMessage(this, _tempGPUTopic, "GPU", DiscoveryOptions.Temperature());
 
-            _cpuPowerPackage = "stats/cpu/powers/package";
-            _cpuPowerCores = "stats/cpu/powers/cores";
-            _cpuPowerGraphics = "stats/cpu/powers/graphics";
-            _cpuPowerMemory = "stats/cpu/powers/memory";
-            _cpuPowerAll = "stats/cpu/powers/all";
+            if (_isCPUName)
+            {
+                GetManager().PublishDiscoveryMessage(this, "stats/cpu/name", "CPU", new HassDiscoveryOptions
+                {
+                    Id = "Name",
+                    Name = "Name",
+                    Component = HomeAssistantComponent.Sensor,
+                    Icon = "mdi:format-color-text"
+                });
 
-            GetManager().PublishDiscoveryMessage(this, _cpuPowerPackage, "CPU", DiscoveryOptionsPower());
-            GetManager().PublishDiscoveryMessage(this, _cpuPowerCores, "CPU", DiscoveryOptionsPower());
-            GetManager().PublishDiscoveryMessage(this, _cpuPowerGraphics, "CPU", DiscoveryOptionsPower());
-            GetManager().PublishDiscoveryMessage(this, _cpuPowerMemory, "CPU", DiscoveryOptionsPower());
-            GetManager().PublishDiscoveryMessage(this, _cpuPowerAll, "CPU", DiscoveryOptionsPower());
-
-            _cpuTemperatureCore = "stats/cpu/temperatures/core{0}";
-            _cpuTemperatureMax = "stats/cpu/temperatures/max";
-            _cpuTemperatureAverage = "stats/cpu/temperatures/average";
-            _cpuTemperaturePackage = "stats/cpu/temperatures/package";
-
-            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, 1), "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, 2), "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, 3), "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, 4), "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, _cpuTemperatureMax, "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, _cpuTemperatureAverage, "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, _cpuTemperaturePackage, "CPU", DiscoveryOptionsTemperature());
-
-            _cpuClockCore = "stats/cpu/clocks/core{0}";
-            _cpuClockBusSpeed = "stats/cpu/clocks/bus-speed";
-
-            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, 1), "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, 2), "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, 3), "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, 4), "CPU", DiscoveryOptionsTemperature());
-            GetManager().PublishDiscoveryMessage(this, _cpuClockBusSpeed, "CPU", DiscoveryOptionsTemperature());
+                var cpuName = CPU.Name();
+                LoggerHelper.Info($"Sending cpu name: {cpuName}");
+                GetManager().PublishMessage(this, "stats/cpu/name", cpuName.ToString());
+            }
 
             _monitorTimer = new Timer();
             _monitorTimer.Interval = 10000;
@@ -68,35 +59,71 @@ namespace Monitor
             _monitorTimer.Start();
         }
 
-        public static HassDiscoveryOptions DiscoveryOptionsTemperature()
+        public void InitCPUClocks()
         {
-            return new HassDiscoveryOptions
-            {
-                Id = "Temperature",
-                Unit = "°C",
-                Name = "Temperature",
-                Component = HomeAssistantComponent.Sensor,
-                Icon = "mdi:thermometer"
-            };
+            _isCPUClocks = true;
+
+            _cpuClockCore = "stats/cpu/clocks/core{0}";
+            _cpuClockBusSpeed = "stats/cpu/clocks/bus-speed";
+
+            for (int core_num = 1; core_num < 5; core_num++)
+                GetManager().PublishDiscoveryMessage(this, string.Format(_cpuClockCore, core_num), "CPU", DiscoveryOptions.Clock());
+            GetManager().PublishDiscoveryMessage(this, _cpuClockBusSpeed, "CPU", DiscoveryOptions.Clock());
         }
 
-        public static HassDiscoveryOptions DiscoveryOptionsPower()
+        public void InitCPUTemperatures()
         {
-            return new HassDiscoveryOptions
-            {
-                Id = "Power",
-                Unit = "W",
-                Name = "Power",
-                Component = HomeAssistantComponent.Sensor,
-                Icon = "mdi:power-plug"
-            };
+            _isCPUTemperatures = true;
+
+            _cpuTemperatureCore = "stats/cpu/temperatures/core{0}";
+            _cpuTemperatureMax = "stats/cpu/temperatures/max";
+            _cpuTemperatureAverage = "stats/cpu/temperatures/average";
+            _cpuTemperaturePackage = "stats/cpu/temperatures/package";
+
+            for (int core_num = 1; core_num < 5; core_num++)
+                GetManager().PublishDiscoveryMessage(this, string.Format(_cpuTemperatureCore, core_num), "CPU", DiscoveryOptions.Temperature());
+            GetManager().PublishDiscoveryMessage(this, _cpuTemperatureMax, "CPU", DiscoveryOptions.Temperature());
+            GetManager().PublishDiscoveryMessage(this, _cpuTemperatureAverage, "CPU", DiscoveryOptions.Temperature());
+            GetManager().PublishDiscoveryMessage(this, _cpuTemperaturePackage, "CPU", DiscoveryOptions.Temperature());
+        }
+
+        public void InitCPULoad()
+        {
+            _isCPULoad = true;
+
+            _cpuLoadCore = "stats/cpu/load/core{0}";
+            _cpuLoadTotal = "stats/cpu/load/total";
+
+            for (int core_num = 1; core_num < 5; core_num++)
+                GetManager().PublishDiscoveryMessage(this, string.Format(_cpuLoadCore, core_num), "CPU", DiscoveryOptions.Load());
+            GetManager().PublishDiscoveryMessage(this, _cpuLoadTotal, "CPU", DiscoveryOptions.Load());
+        }
+
+        public void InitCPUPowers()
+        {
+            _isCPUPowers = true;
+
+            _cpuPowerPackage = "stats/cpu/powers/package";
+            _cpuPowerCores = "stats/cpu/powers/cores";
+            _cpuPowerGraphics = "stats/cpu/powers/graphics";
+            _cpuPowerMemory = "stats/cpu/powers/memory";
+            _cpuPowerAll = "stats/cpu/powers/all";
+
+            GetManager().PublishDiscoveryMessage(this, _cpuPowerPackage, "CPU", DiscoveryOptions.Power());
+            GetManager().PublishDiscoveryMessage(this, _cpuPowerCores, "CPU", DiscoveryOptions.Power());
+            GetManager().PublishDiscoveryMessage(this, _cpuPowerGraphics, "CPU", DiscoveryOptions.Power());
+            GetManager().PublishDiscoveryMessage(this, _cpuPowerMemory, "CPU", DiscoveryOptions.Power());
+            GetManager().PublishDiscoveryMessage(this, _cpuPowerAll, "CPU", DiscoveryOptions.Power());
         }
 
         private void TimerElapsed(object sender, ElapsedEventArgs e)
         {
-            // Clocks
+            // CPU Clocks
             try
             {
+                if (!_isCPUClocks)
+                    return;
+
                 for (int core_num = 1; core_num < 5; core_num++)
                 {
                     var cpuClockCore = CPU.Clocks.GetCore(core_num);
@@ -105,7 +132,7 @@ namespace Monitor
                 }
 
                 var cpuBusSpeed = CPU.Clocks.GetBusSpeed();
-                LoggerHelper.Info($"Sending {_cpuClockBusSpeed} MHz");
+                LoggerHelper.Info($"Sending {cpuBusSpeed} MHz");
                 GetManager().PublishMessage(this, _cpuClockBusSpeed, cpuBusSpeed.ToString());
             }
             catch (Exception exception)
@@ -113,9 +140,12 @@ namespace Monitor
                 LoggerHelper.Error("Failed to send cpu clocks " + exception);
             }
 
-            // Temperatures
+            // CPU Temperatures
             try
             {
+                if (!_isCPUTemperatures)
+                    return;
+
                 for (int core_num = 1; core_num < 5; core_num++)
                 {
                     var cpuTempCore = CPU.Temperatures.GetCore(core_num);
@@ -135,42 +165,73 @@ namespace Monitor
                 LoggerHelper.Info($"Sending {cpuTempAverage} celsius");
                 GetManager().PublishMessage(this, _cpuTemperatureAverage, cpuTempAverage.ToString());
 
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send cpu temperatures " + exception);
+            }
+
+            // CPU Load
+            try
+            {
+                if (!_isCPULoad)
+                    return;
+
+                for (int core_num = 1; core_num < 5; core_num++)
+                {
+                    var cpuLoadCore = CPU.Load.GetCore(core_num);
+                    LoggerHelper.Info($"Sending {cpuLoadCore} %");
+                    GetManager().PublishMessage(this, string.Format(_cpuLoadCore, core_num), cpuLoadCore.ToString());
+                }
+
+                var cpuLoadTotal = CPU.Load.GetTotal();
+                LoggerHelper.Info($"Sending {cpuLoadTotal} %");
+                GetManager().PublishMessage(this, _cpuLoadTotal, cpuLoadTotal.ToString());
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send cpu load " + exception);
+            }
+
+            // CPU Powers
+            try
+            {
+                if (!_isCPUPowers)
+                    return;
+
+                var cpuPowerPackage = CPU.Powers.GetPackage();
+                var cpuPowerCores = CPU.Powers.GetCores();
+                var cpuPowerGraphics = CPU.Powers.GetGraphics();
+                var cpuPowerMemory = CPU.Powers.GetMemory();
+                var cpuPowerAll = cpuPowerPackage + cpuPowerCores + cpuPowerGraphics + cpuPowerMemory;
+
+                LoggerHelper.Info($"Sending {cpuPowerPackage} watt");
+                LoggerHelper.Info($"Sending {cpuPowerCores} watt");
+                LoggerHelper.Info($"Sending {cpuPowerGraphics} watt");
+                LoggerHelper.Info($"Sending {cpuPowerMemory} watt");
+                LoggerHelper.Info($"Sending {cpuPowerAll} watt");
+
+                GetManager().PublishMessage(this, _cpuPowerPackage, cpuPowerPackage.ToString());
+                GetManager().PublishMessage(this, _cpuPowerCores, cpuPowerCores.ToString());
+                GetManager().PublishMessage(this, _cpuPowerGraphics, cpuPowerGraphics.ToString());
+                GetManager().PublishMessage(this, _cpuPowerMemory, cpuPowerMemory.ToString());
+                GetManager().PublishMessage(this, _cpuPowerAll, cpuPowerAll.ToString());
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send powers " + exception);
+            }
+
+            // GPU Temperatures
+            try
+            {
                 var temperatureGPU = GetTemperatureGPU();
                 LoggerHelper.Info($"Sending {temperatureGPU} celsius");
                 GetManager().PublishMessage(this, _tempGPUTopic, temperatureGPU.ToString());
             }
             catch (Exception exception)
             {
-                LoggerHelper.Error("Failed to send temperature " + exception);
-            }
-
-            // Powers
-            try
-            {
-                // CPU
-                var cpuPowerPackage = CPU.Powers.GetPackage();
-                LoggerHelper.Info($"Sending {cpuPowerPackage} watt");
-                GetManager().PublishMessage(this, _cpuPowerPackage, cpuPowerPackage.ToString());
-
-                var cpuPowerCores = CPU.Powers.GetCores();
-                LoggerHelper.Info($"Sending {cpuPowerCores} watt");
-                GetManager().PublishMessage(this, _cpuPowerCores, cpuPowerCores.ToString());
-
-                var cpuPowerGraphics = CPU.Powers.GetGraphics();
-                LoggerHelper.Info($"Sending {cpuPowerGraphics} watt");
-                GetManager().PublishMessage(this, _cpuPowerGraphics, cpuPowerGraphics.ToString());
-
-                var cpuPowerMemory = CPU.Powers.GetMemory();
-                LoggerHelper.Info($"Sending {cpuPowerMemory} watt");
-                GetManager().PublishMessage(this, _cpuPowerMemory, cpuPowerMemory.ToString());
-
-                var cpuPowerAll = cpuPowerPackage + cpuPowerCores + cpuPowerGraphics + cpuPowerMemory;
-                LoggerHelper.Info($"Sending {cpuPowerAll} watt");
-                GetManager().PublishMessage(this, _cpuPowerAll, cpuPowerAll.ToString());
-            }
-            catch (Exception exception)
-            {
-                LoggerHelper.Error("Failed to send powers " + exception);
+                LoggerHelper.Error("Failed to send gpu temperature " + exception);
             }
         }
 

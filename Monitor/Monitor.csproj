@@ -47,8 +47,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CPU.cs" />
+    <Compile Include="Monitors\CPU.cs" />
     <Compile Include="MonitorService.cs" />
+    <Compile Include="DiscoveryOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
