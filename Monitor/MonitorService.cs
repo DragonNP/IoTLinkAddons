@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Timers;
 using IOTLinkAPI.Addons;
+using IOTLinkAPI.Configs;
 using IOTLinkAPI.Helpers;
 using IOTLinkAPI.Platform.HomeAssistant;
 using LibreHardwareMonitor.Hardware;
@@ -11,6 +14,7 @@ namespace Monitor
 {
     public class MonitorService : ServiceAddon
     {
+        private Configuration _config;
         private Timer _monitorTimer;
 
         private string _tempGPUTopic;
@@ -25,33 +29,22 @@ namespace Monitor
         {
             base.Init(addonManager);
 
-            _isCPUName = true;
+            var cfgManager = ConfigurationManager.GetInstance();
+            var _configPath = Path.Combine(_currentPath, "addon.yaml");
+            _config = cfgManager.GetConfiguration(_configPath);
 
-            InitCPUClocks();
-            InitCPUTemperatures();
-            InitCPULoad();
-            InitCPUPowers();
+            SetupMonitors();
+
+            SetupCPUName();
+            SetupCPUClocks();
+            SetupCPUTemperatures();
+            SetupCPULoad();
+            SetupCPUPowers();
 
             //GetSensors();
 
             _tempGPUTopic = "stats/gpu/temperature";
-
             GetManager().PublishDiscoveryMessage(this, _tempGPUTopic, "GPU", DiscoveryOptions.Temperature());
-
-            if (_isCPUName)
-            {
-                GetManager().PublishDiscoveryMessage(this, "stats/cpu/name", "CPU", new HassDiscoveryOptions
-                {
-                    Id = "Name",
-                    Name = "Name",
-                    Component = HomeAssistantComponent.Sensor,
-                    Icon = "mdi:format-color-text"
-                });
-
-                var cpuName = CPU.Name();
-                LoggerHelper.Info($"Sending cpu name: {cpuName}");
-                GetManager().PublishMessage(this, "stats/cpu/name", cpuName.ToString());
-            }
 
             _monitorTimer = new Timer();
             _monitorTimer.Interval = 10000;
@@ -59,9 +52,37 @@ namespace Monitor
             _monitorTimer.Start();
         }
 
-        public void InitCPUClocks()
+        private void SetupMonitors()
         {
-            _isCPUClocks = true;
+            _isCPUName = _config.GetValue("cpu_name", false);
+            _isCPUClocks = _config.GetValue("cpu_clocks", false);
+            _isCPUTemperatures = _config.GetValue("cpu_temps", false);
+            _isCPULoad = _config.GetValue("cpu_load", false);
+            _isCPUPowers = _config.GetValue("cpu_powers", false);
+        }
+
+        public void SetupCPUName()
+        {
+            if (!_isCPUName)
+                return;
+
+            GetManager().PublishDiscoveryMessage(this, "stats/cpu/name", "CPU", new HassDiscoveryOptions
+            {
+                Id = "Name",
+                Name = "Name",
+                Component = HomeAssistantComponent.Sensor,
+                Icon = "mdi:format-color-text"
+            });
+
+            var cpuName = CPU.Name();
+            LoggerHelper.Info($"Sending cpu name: {cpuName}");
+            GetManager().PublishMessage(this, "stats/cpu/name", cpuName.ToString());
+        }
+
+        public void SetupCPUClocks()
+        {
+            if (!_isCPUClocks)
+                return;
 
             _cpuClockCore = "stats/cpu/clocks/core{0}";
             _cpuClockBusSpeed = "stats/cpu/clocks/bus-speed";
@@ -71,9 +92,10 @@ namespace Monitor
             GetManager().PublishDiscoveryMessage(this, _cpuClockBusSpeed, "CPU", DiscoveryOptions.Clock());
         }
 
-        public void InitCPUTemperatures()
+        public void SetupCPUTemperatures()
         {
-            _isCPUTemperatures = true;
+            if (!_isCPUTemperatures)
+                return;
 
             _cpuTemperatureCore = "stats/cpu/temperatures/core{0}";
             _cpuTemperatureMax = "stats/cpu/temperatures/max";
@@ -87,9 +109,10 @@ namespace Monitor
             GetManager().PublishDiscoveryMessage(this, _cpuTemperaturePackage, "CPU", DiscoveryOptions.Temperature());
         }
 
-        public void InitCPULoad()
+        public void SetupCPULoad()
         {
-            _isCPULoad = true;
+            if (!_isCPULoad)
+                return;
 
             _cpuLoadCore = "stats/cpu/load/core{0}";
             _cpuLoadTotal = "stats/cpu/load/total";
@@ -99,9 +122,10 @@ namespace Monitor
             GetManager().PublishDiscoveryMessage(this, _cpuLoadTotal, "CPU", DiscoveryOptions.Load());
         }
 
-        public void InitCPUPowers()
+        public void SetupCPUPowers()
         {
-            _isCPUPowers = true;
+            if (!_isCPUPowers)
+                return;
 
             _cpuPowerPackage = "stats/cpu/powers/package";
             _cpuPowerCores = "stats/cpu/powers/cores";
@@ -214,20 +238,6 @@ namespace Monitor
             catch (Exception exception)
             {
                 LoggerHelper.Error("Failed to send powers " + exception);
-            }
-
-            // GPU Temperatures
-            try
-            {
-                LoggerHelper.Info($"Sending GPU temperatures");
-
-                var temperatureGPU = GetTemperatureGPU();
-
-                GetManager().PublishMessage(this, _tempGPUTopic, temperatureGPU.ToString());
-            }
-            catch (Exception exception)
-            {
-                LoggerHelper.Error("Failed to send gpu temperature " + exception);
             }
         }
 

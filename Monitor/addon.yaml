@@ -7,3 +7,9 @@ name: Monitor
 file: Monitor.dll
 minApiVersion: 2.2.0
 maxApiVersion: 
+
+cpu_name: true
+cpu_clocks: true
+cpu_temps: true
+cpu_load: true
+cpu_powers: true
