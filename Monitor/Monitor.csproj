@@ -30,6 +30,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="IOTLinkAPI">
       <HintPath>..\lib\IOTLinkAPI.dll</HintPath>
@@ -49,13 +52,13 @@
   <ItemGroup>
     <Compile Include="Monitors\CPU.cs" />
     <Compile Include="MonitorService.cs" />
-    <Compile Include="DiscoveryOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="addon.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Costura.Fody">
