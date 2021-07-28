@@ -1,33 +1,34 @@
 ﻿using IOTLinkAPI.Helpers;
 using LibreHardwareMonitor.Hardware;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Monitor
 {
     public class CPU
     {
-        public Computer _computer;
+        private Computer _computer;
 
-        public Clocks _clocks;
-        public Temperatures _temperatures;
-        public Load _load;
-        public Powers _powers;
+        public HardwareClocks Clocks { get; }
+        public HardwareTemperatures Temperatures { get; }
+        public HardwareLoad Load { get; }
+        public HardwarePowers Powers { get; }
 
         public CPU()
         {
+
             _computer = new Computer
             {
                 IsCpuEnabled = true
             };
 
-            _computer.Accept(new UpdateVisitor());
             _computer.Open();
 
-            _clocks = new Clocks(_computer);
-            _temperatures = new Temperatures(_computer);
-            _load = new Load(_computer);
-            _powers = new Powers(_computer);
+            Clocks = new HardwareClocks(_computer);
+            Temperatures = new HardwareTemperatures(_computer);
+            Load = new HardwareLoad(_computer);
+            Powers = new HardwarePowers(_computer);
         }
 
         public string GetName()
@@ -35,9 +36,10 @@ namespace Monitor
             try
             {
                 var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                var cpuName = cpu.Name;
-                if (cpuName != null)
-                    return cpuName;
+                cpu.Update();
+
+                if (cpu.Name != null)
+                    return cpu.Name;
                 return "";
             }
             catch (Exception e)
@@ -47,22 +49,29 @@ namespace Monitor
             }
         }
 
-        public class Clocks
+        public class HardwareClocks
         {
             private Computer _computer;
+            private IHardware _cpu;
+            private List<ISensor> _clockSensors;
 
-            public Clocks(Computer computer) => _computer = computer;
+            public HardwareClocks(Computer computer) {
+                _computer = computer;
+
+                _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+            }
 
             public int GetCore(int core_num)
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var clockSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Clock).ToList();
-                    var cpuClockCore = clockSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
-                                        clockSensors?.First();
-                    if (cpuClockCore?.Value != null)
-                        return (int)cpuClockCore.Value;
+                    Update();
+
+                    var sensor = _clockSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
+                        _clockSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -76,12 +85,13 @@ namespace Monitor
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var clockSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Clock).ToList();
-                    var cpuBusSpeed = clockSensors?.FirstOrDefault(t => t.Name.ToLower() == "bus speed") ??
-                                        clockSensors?.First();
-                    if (cpuBusSpeed?.Value != null)
-                        return (int)cpuBusSpeed.Value;
+                    Update();
+
+                    var sensor = _clockSensors?.FirstOrDefault(t => t.Name.ToLower() == "bus speed") ??
+                        _clockSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -90,24 +100,38 @@ namespace Monitor
                     return 0;
                 }
             }
+
+            private void Update()
+            {
+                _cpu.Update();
+                _clockSensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Clock).ToList();
+            }
         }
 
-        public class Temperatures
+        public class HardwareTemperatures
         {
             private Computer _computer;
+            private IHardware _cpu;
+            private List<ISensor> _tempSensors;
 
-            public Temperatures(Computer computer) => _computer = computer;
+            public HardwareTemperatures(Computer computer)
+            {
+                _computer = computer;
+
+                _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+            }
 
             public int GetCore(int core_num)
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var tempSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
-                    var cpuTempCore = tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
-                                        tempSensors?.First();
-                    if (cpuTempCore?.Value != null)
-                        return (int)cpuTempCore.Value;
+                    Update();
+
+                    var sensor = _tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
+                        _tempSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -121,12 +145,13 @@ namespace Monitor
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var tempSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
-                    var cpuTempPackage = tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu package") ??
-                                        tempSensors?.First();
-                    if (cpuTempPackage?.Value != null)
-                        return (int)cpuTempPackage.Value;
+                    Update();
+
+                    var sensor = _tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu package") ??
+                        _tempSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -140,12 +165,13 @@ namespace Monitor
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var tempSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
-                    var cpuTempMax = tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "core max") ??
-                                        tempSensors?.First();
-                    if (cpuTempMax?.Value != null)
-                        return (int)cpuTempMax.Value;
+                    Update();
+
+                    var sensor = _tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "core max") ??
+                        _tempSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -159,12 +185,13 @@ namespace Monitor
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var tempSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
-                    var cpuTempAverage = tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "core average") ??
-                                        tempSensors?.First();
-                    if (cpuTempAverage?.Value != null)
-                        return (int)cpuTempAverage.Value;
+                    Update();
+
+                    var sensor = _tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "core average") ??
+                        _tempSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -173,24 +200,38 @@ namespace Monitor
                     return 0;
                 }
             }
+
+            private void Update()
+            {
+                _cpu.Update();
+                _tempSensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
+            }
         }
 
-        public class Load {
+        public class HardwareLoad
+        {
             private Computer _computer;
+            private IHardware _cpu;
+            private List<ISensor> _loadSensors;
 
-            public Load(Computer computer) => _computer = computer;
+            public HardwareLoad(Computer computer)
+            {
+                _computer = computer;
+
+                _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+            }
 
             public int GetCore(int core_num)
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var sensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
-                    var cpuLoadCore = sensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
-                                        sensors?.First();
+                    Update();
 
-                    if (cpuLoadCore?.Value != null)
-                        return (int)cpuLoadCore.Value;
+                    var sensor = _loadSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
+                        _loadSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -199,17 +240,18 @@ namespace Monitor
                     return 0;
                 }
             }
-            
+
             public int GetTotal()
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var sensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
-                    var cpuLoadTotal = sensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu total") ??
-                                        sensors?.First();
-                    if (cpuLoadTotal?.Value != null)
-                        return (int)cpuLoadTotal.Value;
+                    Update();
+
+                    var sensor = _loadSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu total") ??
+                        _loadSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -218,24 +260,38 @@ namespace Monitor
                     return 0;
                 }
             }
+
+            private void Update()
+            {
+                _cpu.Update();
+                _loadSensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
+            }
         }
 
-        public class Powers
+        public class HardwarePowers
         {
             private Computer _computer;
+            private IHardware _cpu;
+            private List<ISensor> _powerSensors;
 
-            public Powers(Computer computer) => _computer = computer;
+            public HardwarePowers(Computer computer)
+            {
+                _computer = computer;
 
-            public  int GetPackage()
+                _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+            }
+
+            public int GetPackage()
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var powerSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
-                    var cpuPowerPackage = powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu package") ??
-                                        powerSensors?.First();
-                    if (cpuPowerPackage?.Value != null)
-                        return (int)cpuPowerPackage.Value;
+                    Update();
+
+                    var sensor = _powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu package") ??
+                        _powerSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -249,12 +305,13 @@ namespace Monitor
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var powerSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
-                    var cpuPowerCores = powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu cores") ??
-                                        powerSensors?.First();
-                    if (cpuPowerCores?.Value != null)
-                        return (int)cpuPowerCores.Value;
+                    Update();
+
+                    var sensor = _powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu cores") ??
+                        _powerSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -268,12 +325,13 @@ namespace Monitor
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var powerSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
-                    var cpuPowerGraphics = powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu graphics") ??
-                                        powerSensors?.First();
-                    if (cpuPowerGraphics?.Value != null)
-                        return (int)cpuPowerGraphics.Value;
+                    Update();
+
+                    var sensor = _powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu graphics") ??
+                        _powerSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -287,12 +345,13 @@ namespace Monitor
             {
                 try
                 {
-                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-                    var powerSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
-                    var cpuMemoryGraphics = powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu memory") ??
-                                        powerSensors?.First();
-                    if (cpuMemoryGraphics?.Value != null)
-                        return (int)cpuMemoryGraphics.Value;
+                    Update();
+
+                    var sensor = _powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu memory") ??
+                        _powerSensors?.First();
+
+                    if (sensor?.Value != null)
+                        return (int)sensor.Value;
                     return 0;
                 }
                 catch (Exception e)
@@ -301,21 +360,12 @@ namespace Monitor
                     return 0;
                 }
             }
-        }
-    }
 
-    public class UpdateVisitor : IVisitor
-    {
-        public void VisitComputer(IComputer computer)
-        {
-            computer.Traverse(this);
+            private void Update()
+            {
+                _cpu.Update();
+                _powerSensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
+            }
         }
-        public void VisitHardware(IHardware hardware)
-        {
-            hardware.Update();
-            foreach (IHardware subhardware in hardware.SubHardware) subhardware.Accept(this);
-        }
-        public void VisitSensor(ISensor sensor) { }
-        public void VisitParameter(IParameter parameter) { }
     }
 }

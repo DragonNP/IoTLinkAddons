@@ -11,5 +11,5 @@ maxApiVersion:
 cpu_name: true
 cpu_clocks: true
 cpu_temps: true
-cpu_load: true
+cpu_load: false
 cpu_powers: true

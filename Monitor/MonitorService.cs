@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Timers;
 using IOTLinkAPI.Addons;
 using IOTLinkAPI.Configs;
@@ -33,19 +31,21 @@ namespace Monitor
 
             _cpu = new CPU();
 
-            SetupCPUName();
+            PublishCPUName();
             SetupCPUClocks();
             SetupCPUTemperatures();
             SetupCPULoad();
             SetupCPUPowers();
 
-            _monitorTimer = new Timer();
-            _monitorTimer.Interval = 10000;
+            _monitorTimer = new Timer
+            {
+                Interval = 10000
+            };
             _monitorTimer.Elapsed += TimerElapsed;
             _monitorTimer.Start();
         }
 
-        public void SetupCPUName()
+        public void PublishCPUName()
         {
             if (!_config.GetValue("cpu_name", false))
                 return;
@@ -96,7 +96,7 @@ namespace Monitor
             _cpuPowerMemory = "stats/cpu/powers/memory";
             _cpuPowerAll = "stats/cpu/powers/all";
         }
-        
+
         private void TimerElapsed(object sender, ElapsedEventArgs e)
         {
             // CPU Clocks
@@ -109,11 +109,11 @@ namespace Monitor
 
                 for (int core_num = 1; core_num < 5; core_num++)
                 {
-                    var cpuClockCore = _cpu._clocks.GetCore(core_num);
+                    var cpuClockCore = _cpu.Clocks.GetCore(core_num);
                     GetManager().PublishMessage(this, string.Format(_cpuClockCore, core_num), cpuClockCore.ToString());
                 }
 
-                var cpuBusSpeed = _cpu._clocks.GetBusSpeed();
+                var cpuBusSpeed = _cpu.Clocks.GetBusSpeed();
                 GetManager().PublishMessage(this, _cpuClockBusSpeed, cpuBusSpeed.ToString());
             }
             catch (Exception exception)
@@ -131,13 +131,13 @@ namespace Monitor
 
                 for (int core_num = 1; core_num < 5; core_num++)
                 {
-                    var cpuTempCore = _cpu._temperatures.GetCore(core_num);
+                    var cpuTempCore = _cpu.Temperatures.GetCore(core_num);
                     GetManager().PublishMessage(this, string.Format(_cpuTemperatureCore, core_num), cpuTempCore.ToString());
                 }
 
-                var cpuTempPackage = _cpu._temperatures.GetPackage();
-                var cpuTempMax = _cpu._temperatures.GetMax();
-                var cpuTempAverage = _cpu._temperatures.GetAverage();
+                var cpuTempPackage = _cpu.Temperatures.GetPackage();
+                var cpuTempMax = _cpu.Temperatures.GetMax();
+                var cpuTempAverage = _cpu.Temperatures.GetAverage();
 
                 GetManager().PublishMessage(this, _cpuTemperaturePackage, cpuTempPackage.ToString());
                 GetManager().PublishMessage(this, _cpuTemperatureMax, cpuTempMax.ToString());
@@ -160,11 +160,11 @@ namespace Monitor
 
                 for (int core_num = 1; core_num < 5; core_num++)
                 {
-                    var cpuLoadCore = _cpu._load.GetCore(core_num);
+                    var cpuLoadCore = _cpu.Load.GetCore(core_num);
                     GetManager().PublishMessage(this, string.Format(_cpuLoadCore, core_num), cpuLoadCore.ToString());
                 }
 
-                var cpuLoadTotal = _cpu._load.GetTotal();
+                var cpuLoadTotal = _cpu.Load.GetTotal();
                 GetManager().PublishMessage(this, _cpuLoadTotal, cpuLoadTotal.ToString());
             }
             catch (Exception exception)
@@ -180,10 +180,10 @@ namespace Monitor
 
                 LoggerHelper.Info($"Sending CPU powers");
 
-                var cpuPowerPackage = _cpu._powers.GetPackage();
-                var cpuPowerCores = _cpu._powers.GetCores();
-                var cpuPowerGraphics = _cpu._powers.GetGraphics();
-                var cpuPowerMemory = _cpu._powers.GetMemory();
+                var cpuPowerPackage = _cpu.Powers.GetPackage();
+                var cpuPowerCores = _cpu.Powers.GetCores();
+                var cpuPowerGraphics = _cpu.Powers.GetGraphics();
+                var cpuPowerMemory = _cpu.Powers.GetMemory();
                 var cpuPowerAll = cpuPowerPackage + cpuPowerCores + cpuPowerGraphics + cpuPowerMemory;
 
                 GetManager().PublishMessage(this, _cpuPowerPackage, cpuPowerPackage.ToString());
