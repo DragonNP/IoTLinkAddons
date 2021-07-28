@@ -5,19 +5,36 @@ using System.Linq;
 
 namespace Monitor
 {
-    public static class CPU
+    public class CPU
     {
-        public static string Name()
+        public Computer _computer;
+
+        public Clocks _clocks;
+        public Temperatures _temperatures;
+        public Load _load;
+        public Powers _powers;
+
+        public CPU()
         {
-            Computer computer = new Computer
+            _computer = new Computer
             {
                 IsCpuEnabled = true
             };
 
-            computer.Open();
+            _computer.Accept(new UpdateVisitor());
+            _computer.Open();
+
+            _clocks = new Clocks(_computer);
+            _temperatures = new Temperatures(_computer);
+            _load = new Load(_computer);
+            _powers = new Powers(_computer);
+        }
+
+        public string GetName()
+        {
             try
             {
-                var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                 var cpuName = cpu.Name;
                 if (cpuName != null)
                     return cpuName;
@@ -30,19 +47,17 @@ namespace Monitor
             }
         }
 
-        public static class Clocks
+        public class Clocks
         {
-            public static int GetCore(int core_num)
-            {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
+            private Computer _computer;
 
-                computer.Open();
+            public Clocks(Computer computer) => _computer = computer;
+
+            public int GetCore(int core_num)
+            {
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var clockSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Clock).ToList();
                     var cpuClockCore = clockSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
                                         clockSensors?.First();
@@ -57,17 +72,11 @@ namespace Monitor
                 }
             }
 
-            public static int GetBusSpeed()
+            public int GetBusSpeed()
             {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
-
-                computer.Open();
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var clockSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Clock).ToList();
                     var cpuBusSpeed = clockSensors?.FirstOrDefault(t => t.Name.ToLower() == "bus speed") ??
                                         clockSensors?.First();
@@ -82,20 +91,18 @@ namespace Monitor
                 }
             }
         }
-        
-        public static class Temperatures
-        {
-            public static int GetCore(int core_num)
-            {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
 
-                computer.Open();
+        public class Temperatures
+        {
+            private Computer _computer;
+
+            public Temperatures(Computer computer) => _computer = computer;
+
+            public int GetCore(int core_num)
+            {
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var tempSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
                     var cpuTempCore = tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
                                         tempSensors?.First();
@@ -110,17 +117,11 @@ namespace Monitor
                 }
             }
 
-            public static int GetPackage()
+            public int GetPackage()
             {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
-
-                computer.Open();
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var tempSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
                     var cpuTempPackage = tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu package") ??
                                         tempSensors?.First();
@@ -135,17 +136,11 @@ namespace Monitor
                 }
             }
 
-            public static int GetMax()
+            public int GetMax()
             {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
-
-                computer.Open();
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var tempSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
                     var cpuTempMax = tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "core max") ??
                                         tempSensors?.First();
@@ -160,17 +155,11 @@ namespace Monitor
                 }
             }
 
-            public static int GetAverage()
+            public int GetAverage()
             {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
-
-                computer.Open();
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var tempSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
                     var cpuTempAverage = tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "core average") ??
                                         tempSensors?.First();
@@ -186,18 +175,16 @@ namespace Monitor
             }
         }
 
-        public static class Load {
-            public static int GetCore(int core_num)
-            {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
+        public class Load {
+            private Computer _computer;
 
-                computer.Open();
+            public Load(Computer computer) => _computer = computer;
+
+            public int GetCore(int core_num)
+            {
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var sensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
                     var cpuLoadCore = sensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
                                         sensors?.First();
@@ -212,17 +199,12 @@ namespace Monitor
                     return 0;
                 }
             }
-            public static int GetTotal()
+            
+            public int GetTotal()
             {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
-
-                computer.Open();
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var sensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
                     var cpuLoadTotal = sensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu total") ??
                                         sensors?.First();
@@ -238,19 +220,17 @@ namespace Monitor
             }
         }
 
-        public static class Powers
+        public class Powers
         {
-            public static int GetPackage()
-            {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
+            private Computer _computer;
 
-                computer.Open();
+            public Powers(Computer computer) => _computer = computer;
+
+            public  int GetPackage()
+            {
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var powerSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
                     var cpuPowerPackage = powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu package") ??
                                         powerSensors?.First();
@@ -265,17 +245,11 @@ namespace Monitor
                 }
             }
 
-            public static int GetCores()
+            public int GetCores()
             {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
-
-                computer.Open();
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var powerSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
                     var cpuPowerCores = powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu cores") ??
                                         powerSensors?.First();
@@ -290,17 +264,11 @@ namespace Monitor
                 }
             }
 
-            public static int GetGraphics()
+            public int GetGraphics()
             {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
-
-                computer.Open();
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var powerSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
                     var cpuPowerGraphics = powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu graphics") ??
                                         powerSensors?.First();
@@ -315,17 +283,11 @@ namespace Monitor
                 }
             }
 
-            public static int GetMemory()
+            public int GetMemory()
             {
-                Computer computer = new Computer
-                {
-                    IsCpuEnabled = true
-                };
-
-                computer.Open();
                 try
                 {
-                    var cpu = computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                    var cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
                     var powerSensors = cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
                     var cpuMemoryGraphics = powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu memory") ??
                                         powerSensors?.First();
@@ -340,5 +302,20 @@ namespace Monitor
                 }
             }
         }
+    }
+
+    public class UpdateVisitor : IVisitor
+    {
+        public void VisitComputer(IComputer computer)
+        {
+            computer.Traverse(this);
+        }
+        public void VisitHardware(IHardware hardware)
+        {
+            hardware.Update();
+            foreach (IHardware subhardware in hardware.SubHardware) subhardware.Accept(this);
+        }
+        public void VisitSensor(ISensor sensor) { }
+        public void VisitParameter(IParameter parameter) { }
     }
 }
