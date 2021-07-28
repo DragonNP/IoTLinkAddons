@@ -20,7 +20,7 @@ Configuration file: %ProgramData%\IOTLink\Addons\Monitor\addon.yaml
 cpu_name: true   # Send cpu name to mqtt (sent only once)
 cpu_clocks: true # Send cpu clocks to mqtt
 cpu_temps: true  # Send cpu temperature to mqtt
-cpu_load: true   # Send cpu load to mqtt
+cpu_load: true   # it does not work stably
 cpu_powers: true # Send cpu powers to mqtt
 ```
 
