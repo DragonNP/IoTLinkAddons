@@ -14,12 +14,14 @@ namespace Monitor
         private Timer _monitorTimer;
         private Configuration _config;
 
-        private CPU _cpu;
+        private Cpu _cpu;
         private Memory _memory;
+        private GpuNvidia _gpuNvidia;
 
-        private bool _isSendedCPUName;
+        private bool _isSendedCPUName, _isSendedGPUNvidiaName;
         private string _cpuClocksTopic, _cpuTemperaturesTopic, _cpuPowersTopic;
         private string _memoryDataTopic, _memoryLoadTopic;
+        private string _gpuNvidiaClocksTopic;
 
         public override void Init(IAddonManager addonManager)
         {
@@ -28,8 +30,9 @@ namespace Monitor
             SetupConfiguration();
             SetupMQTTTopics();
 
-            _cpu = new CPU();
+            _cpu = new Cpu();
             _memory = new Memory();
+            _gpuNvidia = new GpuNvidia();
 
             _monitorTimer = new Timer
             {
@@ -54,6 +57,8 @@ namespace Monitor
 
             _memoryDataTopic = "stats/memory/data/";
             _memoryLoadTopic = "stats/memory/load/";
+
+            _gpuNvidiaClocksTopic = "stats/gpu_nvidia/clocks/";
         }
 
         public void PublishCPUName()
@@ -68,10 +73,24 @@ namespace Monitor
             _isSendedCPUName = true;
         }
 
+        public void PublishGPUNvidiaName()
+        {
+            if (!_config.GetValue("gpu_nvidia_name", false))
+                return;
+
+            var gpuName = _gpuNvidia.GetName();
+            LoggerHelper.Info($"Sending gpu nvidia name: {gpuName}");
+            GetManager().PublishMessage(this, "stats/gpu_nvidia/name", gpuName.ToString());
+
+            _isSendedGPUNvidiaName = true;
+        }
+
         void TimerElapsed(object sender, ElapsedEventArgs e)
         {
             if (!_isSendedCPUName)
                 PublishCPUName();
+            if (!_isSendedGPUNvidiaName)
+                PublishGPUNvidiaName();
 
             // CPU Clocks
             try
@@ -181,6 +200,28 @@ namespace Monitor
             catch (Exception exception)
             {
                 LoggerHelper.Error("Failed to send memory load " + exception);
+            }
+
+            // GPU Nvidia Clocks
+            try
+            {
+                if (!_config.GetValue("gpu_nvidia_clocks", false))
+                    return;
+
+                LoggerHelper.Info($"Sending GPU Nvidia clocks");
+
+                var sensors = _gpuNvidia.GetClocks();
+                foreach (var keyvalue in sensors)
+                {
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
+
+                    GetManager().PublishMessage(this, _gpuNvidiaClocksTopic + name, value);
+                }
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send gpu nvidia clocks " + exception);
             }
         }
     }

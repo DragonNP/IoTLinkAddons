@@ -52,8 +52,9 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Monitors\CPU.cs" />
+    <Compile Include="Monitors\Cpu.cs" />
     <Compile Include="MonitorService.cs" />
+    <Compile Include="Monitors\GpuNvidia.cs" />
     <Compile Include="Monitors\Memory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -67,6 +68,9 @@
     <PackageReference Include="Costura.Fody">
       <Version>5.3.0</Version>
       <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="NvAPIWrapper.Net">
+      <Version>0.8.1.101</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

@@ -6,12 +6,12 @@ using System.Linq;
 
 namespace Monitor
 {
-    public class CPU
+    public class Cpu
     {
         private Computer _computer;
         private IHardware _cpu;
 
-        public CPU()
+        public Cpu()
         {
             _computer = new Computer
             {

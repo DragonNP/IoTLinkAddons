@@ -14,3 +14,4 @@ cpu_temps: true
 cpu_powers: true
 memory_data: true
 memory_load: true
+gpu_nvidia_clocks: true
