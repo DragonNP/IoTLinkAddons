@@ -4,6 +4,7 @@ using System.Timers;
 using IOTLinkAPI.Addons;
 using IOTLinkAPI.Configs;
 using IOTLinkAPI.Helpers;
+using Monitor.Monitors;
 using Timer = System.Timers.Timer;
 
 namespace Monitor
@@ -12,18 +13,23 @@ namespace Monitor
     {
         private Timer _monitorTimer;
         private Configuration _config;
+
         private CPU _cpu;
+        private Memory _memory;
+
         private bool _isSendedCPUName;
         private string _cpuClocksTopic, _cpuTemperaturesTopic, _cpuPowersTopic;
+        private string _memoryDataTopic, _memoryLoadTopic;
 
         public override void Init(IAddonManager addonManager)
         {
             base.Init(addonManager);
 
-            SetConfiguration();
-            SetMQTTTopics();
+            SetupConfiguration();
+            SetupMQTTTopics();
 
             _cpu = new CPU();
+            _memory = new Memory();
 
             _monitorTimer = new Timer
             {
@@ -33,18 +39,21 @@ namespace Monitor
             _monitorTimer.Start();
         }
 
-        void SetConfiguration()
+        void SetupConfiguration()
         {
             var cfgManager = ConfigurationManager.GetInstance();
             var _configPath = Path.Combine(_currentPath, "addon.yaml");
             _config = cfgManager.GetConfiguration(_configPath);
         }
 
-        void SetMQTTTopics()
+        void SetupMQTTTopics()
         {
             _cpuClocksTopic = "stats/cpu/clocks/";
             _cpuTemperaturesTopic = "stats/cpu/temperatures/";
             _cpuPowersTopic = "stats/cpu/powers/";
+
+            _memoryDataTopic = "stats/memory/data/";
+            _memoryLoadTopic = "stats/memory/load/";
         }
 
         public void PublishCPUName()
@@ -59,7 +68,7 @@ namespace Monitor
             _isSendedCPUName = true;
         }
 
-        private void TimerElapsed(object sender, ElapsedEventArgs e)
+        void TimerElapsed(object sender, ElapsedEventArgs e)
         {
             if (!_isSendedCPUName)
                 PublishCPUName();
@@ -78,7 +87,7 @@ namespace Monitor
                     var name = keyvalue.Key;
                     var value = keyvalue.Value;
 
-                    GetManager().PublishMessage(this, _cpuClocksTopic+name, value);
+                    GetManager().PublishMessage(this, _cpuClocksTopic + name, value);
                 }
             }
             catch (Exception exception)
@@ -100,7 +109,7 @@ namespace Monitor
                     var name = keyvalue.Key;
                     var value = keyvalue.Value;
 
-                    GetManager().PublishMessage(this, _cpuTemperaturesTopic+name, value);
+                    GetManager().PublishMessage(this, _cpuTemperaturesTopic + name, value);
                 }
             }
             catch (Exception exception)
@@ -122,12 +131,34 @@ namespace Monitor
                     var name = keyvalue.Key;
                     var value = keyvalue.Value;
 
-                    GetManager().PublishMessage(this, _cpuPowersTopic+name, value);
+                    GetManager().PublishMessage(this, _cpuPowersTopic + name, value);
                 }
             }
             catch (Exception exception)
             {
                 LoggerHelper.Error("Failed to send powers " + exception);
+            }
+
+            // Memory Data
+            try
+            {
+                if (!_config.GetValue("memory_data", false))
+                    return;
+
+                LoggerHelper.Info($"Sending Memory data");
+
+                var sensors = _memory.GetData();
+                foreach (var keyvalue in sensors)
+                {
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
+
+                    GetManager().PublishMessage(this, _memoryDataTopic + name, value);
+                }
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send memory data " + exception);
             }
         }
     }
