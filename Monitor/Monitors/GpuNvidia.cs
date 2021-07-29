@@ -57,5 +57,25 @@ namespace Monitor.Monitors
 
             return readed_sensors;
         }
+
+        public IDictionary<string, string> GetTemperatures()
+        {
+            _gpu.Update();
+
+            var readed_sensors = new Dictionary<string, string> { };
+            var temp_sensors = _gpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
+
+            foreach (var sensor in temp_sensors)
+            {
+                var name = sensor.Name;
+                var value = sensor.Value?.ToString("0.#");
+
+                name = name.ToLower().Replace("#", "");
+
+                readed_sensors.Add(name, value);
+            }
+
+            return readed_sensors;
+        }
     }
 }

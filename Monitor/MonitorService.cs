@@ -21,7 +21,7 @@ namespace Monitor
         private bool _isSendedCPUName, _isSendedGPUNvidiaName;
         private string _cpuClocksTopic, _cpuTemperaturesTopic, _cpuPowersTopic;
         private string _memoryDataTopic, _memoryLoadTopic;
-        private string _gpuNvidiaClocksTopic;
+        private string _gpuNvidiaClocksTopic, _gpuNvidiaTemperaturesTopic;
 
         public override void Init(IAddonManager addonManager)
         {
@@ -59,6 +59,7 @@ namespace Monitor
             _memoryLoadTopic = "stats/memory/load/";
 
             _gpuNvidiaClocksTopic = "stats/gpu_nvidia/clocks/";
+            _gpuNvidiaTemperaturesTopic = "stats/gpu_nvidia/temperatures/";
         }
 
         public void PublishCPUName()
@@ -222,6 +223,28 @@ namespace Monitor
             catch (Exception exception)
             {
                 LoggerHelper.Error("Failed to send gpu nvidia clocks " + exception);
+            }
+
+            // GPU Nvidia Temperatures
+            try
+            {
+                if (!_config.GetValue("gpu_nvidia_temperatures", false))
+                    return;
+
+                LoggerHelper.Info($"Sending GPU Nvidia temperatures");
+
+                var sensors = _gpuNvidia.GetTemperatures();
+                foreach (var keyvalue in sensors)
+                {
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
+
+                    GetManager().PublishMessage(this, _gpuNvidiaTemperaturesTopic + name, value);
+                }
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send gpu nvidia temperatures " + exception);
             }
         }
     }
