@@ -28,7 +28,6 @@ namespace Monitor
             _mqttConfig = new MQTTConfiguration();
 
             _cpu = new CPU();
-
             PublishCPUName();
 
             _monitorTimer = new Timer
@@ -59,14 +58,14 @@ namespace Monitor
 
                 LoggerHelper.Info($"Sending CPU clocks");
 
-                for (int core_num = 1; core_num < 5; core_num++)
+                var sensors = _cpu.GetClocks();
+                foreach (var keyvalue in sensors)
                 {
-                    var cpuClockCore = _cpu.Clocks.GetCore(core_num);
-                    GetManager().PublishMessage(this, string.Format(_mqttConfig.GetClockTopic("core"), core_num), cpuClockCore.ToString());
-                }
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
 
-                var cpuBusSpeed = _cpu.Clocks.GetBusSpeed();
-                GetManager().PublishMessage(this, _mqttConfig.GetClockTopic("bus-speed"), cpuBusSpeed.ToString());
+                    GetManager().PublishMessage(this, _mqttConfig.CpuClocksTopic+name, value);
+                }
             }
             catch (Exception exception)
             {
@@ -79,23 +78,16 @@ namespace Monitor
                 if (!_config.GetValue("cpu_temps", false))
                     return;
 
-                LoggerHelper.Info($"Sending CPU temperature");
+                LoggerHelper.Info($"Sending CPU temperatures");
 
-                for (int core_num = 1; core_num < 5; core_num++)
+                var sensors = _cpu.GetTemperatures();
+                foreach (var keyvalue in sensors)
                 {
-                    var cpuTempCore = _cpu.Temperatures.GetCore(core_num);
-                    GetManager().PublishMessage(this, string.Format(_mqttConfig.GetTempTopic("core"), core_num), cpuTempCore.ToString());
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
+
+                    GetManager().PublishMessage(this, _mqttConfig.CpuTemperaturesTopic + name, value);
                 }
-
-                var cpuTempPackage = _cpu.Temperatures.GetPackage();
-                var cpuTempMax = _cpu.Temperatures.GetMax();
-                var cpuTempAverage = _cpu.Temperatures.GetAverage();
-
-                GetManager().PublishMessage(this, _mqttConfig.GetTempTopic("package"), cpuTempPackage.ToString());
-                GetManager().PublishMessage(this, _mqttConfig.GetTempTopic("max"), cpuTempMax.ToString());
-                GetManager().PublishMessage(this, _mqttConfig.GetTempTopic("average"), cpuTempAverage.ToString());
-
-
             }
             catch (Exception exception)
             {
@@ -110,14 +102,14 @@ namespace Monitor
 
                 LoggerHelper.Info($"Sending CPU load");
 
-                for (int core_num = 1; core_num < 5; core_num++)
+                var sensors = _cpu.GetLoad();
+                foreach (var keyvalue in sensors)
                 {
-                    var cpuLoadCore = _cpu.Load.GetCore(core_num);
-                    GetManager().PublishMessage(this, string.Format(_mqttConfig.GetLoadTopic("core"), core_num), cpuLoadCore.ToString());
-                }
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
 
-                var cpuLoadTotal = _cpu.Load.GetTotal();
-                GetManager().PublishMessage(this, _mqttConfig.GetLoadTopic("total"), cpuLoadTotal.ToString());
+                    GetManager().PublishMessage(this, _mqttConfig.CpuLoadTopic + name, value);
+                }
             }
             catch (Exception exception)
             {
@@ -132,17 +124,14 @@ namespace Monitor
 
                 LoggerHelper.Info($"Sending CPU powers");
 
-                var cpuPowerPackage = _cpu.Powers.GetPackage();
-                var cpuPowerCores = _cpu.Powers.GetCores();
-                var cpuPowerGraphics = _cpu.Powers.GetGraphics();
-                var cpuPowerMemory = _cpu.Powers.GetMemory();
-                var cpuPowerAll = cpuPowerPackage + cpuPowerCores + cpuPowerGraphics + cpuPowerMemory;
+                var sensors = _cpu.GetPowers();
+                foreach (var keyvalue in sensors)
+                {
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
 
-                GetManager().PublishMessage(this, _mqttConfig.GetPowerTopic("package"), cpuPowerPackage.ToString());
-                GetManager().PublishMessage(this, _mqttConfig.GetPowerTopic("cores"), cpuPowerCores.ToString());
-                GetManager().PublishMessage(this, _mqttConfig.GetPowerTopic("graphics"), cpuPowerGraphics.ToString());
-                GetManager().PublishMessage(this, _mqttConfig.GetPowerTopic("memory"), cpuPowerMemory.ToString());
-                GetManager().PublishMessage(this, _mqttConfig.GetPowerTopic("all"), cpuPowerAll.ToString());
+                    GetManager().PublishMessage(this, _mqttConfig.CpuPowersTopic + name, value);
+                }
             }
             catch (Exception exception)
             {

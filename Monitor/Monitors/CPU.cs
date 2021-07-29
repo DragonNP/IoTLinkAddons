@@ -9,26 +9,16 @@ namespace Monitor
     public class CPU
     {
         private Computer _computer;
-
-        public HardwareClocks Clocks { get; }
-        public HardwareTemperatures Temperatures { get; }
-        public HardwareLoad Load { get; }
-        public HardwarePowers Powers { get; }
+        private IHardware _cpu;
 
         public CPU()
         {
-
             _computer = new Computer
             {
                 IsCpuEnabled = true
             };
-
             _computer.Open();
-
-            Clocks = new HardwareClocks(_computer);
-            Temperatures = new HardwareTemperatures(_computer);
-            Load = new HardwareLoad(_computer);
-            Powers = new HardwarePowers(_computer);
+            _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
         }
 
         public string GetName()
@@ -49,323 +39,84 @@ namespace Monitor
             }
         }
 
-        public class HardwareClocks
+        public IDictionary<string, string> GetClocks()
         {
-            private Computer _computer;
-            private IHardware _cpu;
-            private List<ISensor> _clockSensors;
+            _cpu.Update();
 
-            public HardwareClocks(Computer computer) {
-                _computer = computer;
+            var readed_sensors = new Dictionary<string, string> { };
+            var clock_sensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Clock).ToList();
 
-                _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
-            }
-
-            public int GetCore(int core_num)
+            foreach (var sensor in clock_sensors)
             {
-                try
-                {
-                    Update();
+                var name = sensor.Name;
+                var value = sensor.Value?.ToString("0.#");
 
-                    var sensor = _clockSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
-                        _clockSensors?.First();
+                name = name.ToLower().Replace("#", "");
 
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu clock core " + core_num, e);
-                    return 0;
-                }
+                readed_sensors.Add(name, value);
             }
 
-            public int GetBusSpeed()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _clockSensors?.FirstOrDefault(t => t.Name.ToLower() == "bus speed") ??
-                        _clockSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu clock bus speed package", e);
-                    return 0;
-                }
-            }
-
-            private void Update()
-            {
-                _cpu.Update();
-                _clockSensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Clock).ToList();
-            }
+            return readed_sensors;
         }
 
-        public class HardwareTemperatures
+        public IDictionary<string, string> GetTemperatures()
         {
-            private Computer _computer;
-            private IHardware _cpu;
-            private List<ISensor> _tempSensors;
+            _cpu.Update();
 
-            public HardwareTemperatures(Computer computer)
+            var readed_sensors = new Dictionary<string, string> { };
+            var temp_sensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
+
+            foreach (var sensor in temp_sensors)
             {
-                _computer = computer;
+                var name = sensor.Name;
+                var value = sensor.Value?.ToString("0.#");
 
-                _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                name = name.ToLower().Replace("#", "");
+
+                readed_sensors.Add(name, value);
             }
 
-            public int GetCore(int core_num)
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
-                        _tempSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu temperature core " + core_num, e);
-                    return 0;
-                }
-            }
-
-            public int GetPackage()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu package") ??
-                        _tempSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu temperature package", e);
-                    return 0;
-                }
-            }
-
-            public int GetMax()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "core max") ??
-                        _tempSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu temperature max", e);
-                    return 0;
-                }
-            }
-
-            public int GetAverage()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _tempSensors?.FirstOrDefault(t => t.Name.ToLower() == "core average") ??
-                        _tempSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu temperature average", e);
-                    return 0;
-                }
-            }
-
-            private void Update()
-            {
-                _cpu.Update();
-                _tempSensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
-            }
+            return readed_sensors;
         }
 
-        public class HardwareLoad
+        public IDictionary<string, string> GetLoad()
         {
-            private Computer _computer;
-            private IHardware _cpu;
-            private List<ISensor> _loadSensors;
+            _cpu.Update();
 
-            public HardwareLoad(Computer computer)
+            var readed_sensors = new Dictionary<string, string> { };
+            var load_sensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
+
+            foreach (var sensor in load_sensors)
             {
-                _computer = computer;
+                var name = sensor.Name;
+                var value = sensor.Value?.ToString("0.#");
 
-                _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                name = name.ToLower().Replace("#", "");
+
+                readed_sensors.Add(name, value);
             }
 
-            public int GetCore(int core_num)
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _loadSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu core #" + core_num) ??
-                        _loadSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu load core " + core_num, e);
-                    return 0;
-                }
-            }
-
-            public int GetTotal()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _loadSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu total") ??
-                        _loadSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu load total", e);
-                    return 0;
-                }
-            }
-
-            private void Update()
-            {
-                _cpu.Update();
-                _loadSensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
-            }
+            return readed_sensors;
         }
 
-        public class HardwarePowers
+        public IDictionary<string, string> GetPowers()
         {
-            private Computer _computer;
-            private IHardware _cpu;
-            private List<ISensor> _powerSensors;
+            _cpu.Update();
 
-            public HardwarePowers(Computer computer)
+            var readed_sensors = new Dictionary<string, string> { };
+            var power_sensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
+
+            foreach (var sensor in power_sensors)
             {
-                _computer = computer;
+                var name = sensor.Name;
+                var value = sensor.Value?.ToString("0.#");
 
-                _cpu = _computer.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu);
+                name = name.ToLower().Replace("#", "");
+
+                readed_sensors.Add(name, value);
             }
 
-            public int GetPackage()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu package") ??
-                        _powerSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu power package", e);
-                    return 0;
-                }
-            }
-
-            public int GetCores()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu cores") ??
-                        _powerSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu power cores", e);
-                    return 0;
-                }
-            }
-
-            public int GetGraphics()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu graphics") ??
-                        _powerSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu power graphics", e);
-                    return 0;
-                }
-            }
-
-            public int GetMemory()
-            {
-                try
-                {
-                    Update();
-
-                    var sensor = _powerSensors?.FirstOrDefault(t => t.Name.ToLower() == "cpu memory") ??
-                        _powerSensors?.First();
-
-                    if (sensor?.Value != null)
-                        return (int)sensor.Value;
-                    return 0;
-                }
-                catch (Exception e)
-                {
-                    LoggerHelper.Error("Failed to read cpu power memory", e);
-                    return 0;
-                }
-            }
-
-            private void Update()
-            {
-                _cpu.Update();
-                _powerSensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
-            }
+            return readed_sensors;
         }
     }
 }
