@@ -52,7 +52,6 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="MQTTConfiguration.cs" />
     <Compile Include="Monitors\CPU.cs" />
     <Compile Include="MonitorService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

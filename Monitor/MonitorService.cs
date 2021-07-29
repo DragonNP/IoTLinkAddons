@@ -11,34 +11,40 @@ namespace Monitor
     public class MonitorService : ServiceAddon
     {
         private Timer _monitorTimer;
-
         private Configuration _config;
-        private MQTTConfiguration _mqttConfig;
-
         private CPU _cpu;
-
         private bool _isSendedCPUName;
+        private string _cpuClocksTopic, _cpuTemperaturesTopic, _cpuPowersTopic;
 
         public override void Init(IAddonManager addonManager)
         {
             base.Init(addonManager);
 
-            var cfgManager = ConfigurationManager.GetInstance();
-            var _configPath = Path.Combine(_currentPath, "addon.yaml");
-            _config = cfgManager.GetConfiguration(_configPath);
-
-            _mqttConfig = new MQTTConfiguration();
+            SetConfiguration();
+            SetMQTTTopics();
 
             _cpu = new CPU();
 
-            PublishCPUName();
-
             _monitorTimer = new Timer
             {
-                Interval = 10000
+                Interval = 30000
             };
             _monitorTimer.Elapsed += TimerElapsed;
             _monitorTimer.Start();
+        }
+
+        void SetConfiguration()
+        {
+            var cfgManager = ConfigurationManager.GetInstance();
+            var _configPath = Path.Combine(_currentPath, "addon.yaml");
+            _config = cfgManager.GetConfiguration(_configPath);
+        }
+
+        void SetMQTTTopics()
+        {
+            _cpuClocksTopic = "stats/cpu/clocks/";
+            _cpuTemperaturesTopic = "stats/cpu/temperatures/";
+            _cpuPowersTopic = "stats/cpu/powers/";
         }
 
         public void PublishCPUName()
