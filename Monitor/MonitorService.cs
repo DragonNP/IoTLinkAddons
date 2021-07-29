@@ -78,7 +78,7 @@ namespace Monitor
                     var name = keyvalue.Key;
                     var value = keyvalue.Value;
 
-                    GetManager().PublishMessage(this, _mqttConfig.CpuClocksTopic+name, value);
+                    GetManager().PublishMessage(this, _cpuClocksTopic+name, value);
                 }
             }
             catch (Exception exception)
@@ -100,7 +100,7 @@ namespace Monitor
                     var name = keyvalue.Key;
                     var value = keyvalue.Value;
 
-                    GetManager().PublishMessage(this, _mqttConfig.CpuTemperaturesTopic + name, value);
+                    GetManager().PublishMessage(this, _cpuTemperaturesTopic+name, value);
                 }
             }
             catch (Exception exception)
@@ -122,7 +122,7 @@ namespace Monitor
                     var name = keyvalue.Key;
                     var value = keyvalue.Value;
 
-                    GetManager().PublishMessage(this, _mqttConfig.CpuPowersTopic + name, value);
+                    GetManager().PublishMessage(this, _cpuPowersTopic+name, value);
                 }
             }
             catch (Exception exception)
