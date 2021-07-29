@@ -160,6 +160,28 @@ namespace Monitor
             {
                 LoggerHelper.Error("Failed to send memory data " + exception);
             }
+
+            // Memory Load
+            try
+            {
+                if (!_config.GetValue("memory_load", false))
+                    return;
+
+                LoggerHelper.Info($"Sending Memory load");
+
+                var sensors = _memory.GetLoad();
+                foreach (var keyvalue in sensors)
+                {
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
+
+                    GetManager().PublishMessage(this, _memoryLoadTopic + name, value);
+                }
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send memory load " + exception);
+            }
         }
     }
 }
