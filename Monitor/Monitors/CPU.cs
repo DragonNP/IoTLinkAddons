@@ -79,26 +79,6 @@ namespace Monitor
             return readed_sensors;
         }
 
-        public IDictionary<string, string> GetLoad()
-        {
-            _cpu.Update();
-
-            var readed_sensors = new Dictionary<string, string> { };
-            var load_sensors = _cpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
-
-            foreach (var sensor in load_sensors)
-            {
-                var name = sensor.Name;
-                var value = sensor.Value?.ToString("0.#");
-
-                name = name.ToLower().Replace("#", "");
-
-                readed_sensors.Add(name, value);
-            }
-
-            return readed_sensors;
-        }
-
         public IDictionary<string, string> GetPowers()
         {
             _cpu.Update();

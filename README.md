@@ -7,11 +7,9 @@ IoTLinkAddons is free addons for [IoTLink](https://iotlink.gitlab.io/)
 ### Features
 CPU:
  - Name
- - Clock cores (only up to 4 cores)
- - Bus Speed
- - Temperatures (up to 4 cores, package, max, average)
- - Load (up to 4 cores, total)
- - Powers (package, cores, graphics, memory, all)
+ - Clocks
+ - Temperatures
+ - Powers
 
 ### Configuration
 Configuration file: %ProgramData%\IOTLink\Addons\Monitor\addon.yaml
@@ -20,7 +18,6 @@ Configuration file: %ProgramData%\IOTLink\Addons\Monitor\addon.yaml
 cpu_name: true   # Send cpu name to mqtt (sent only once)
 cpu_clocks: true # Send cpu clocks to mqtt
 cpu_temps: true  # Send cpu temperature to mqtt
-cpu_load: true   # it does not work stably
 cpu_powers: true # Send cpu powers to mqtt
 ```
 

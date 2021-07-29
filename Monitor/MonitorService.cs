@@ -17,6 +17,8 @@ namespace Monitor
 
         private CPU _cpu;
 
+        private bool _isSendedCPUName;
+
         public override void Init(IAddonManager addonManager)
         {
             base.Init(addonManager);
@@ -28,6 +30,7 @@ namespace Monitor
             _mqttConfig = new MQTTConfiguration();
 
             _cpu = new CPU();
+
             PublishCPUName();
 
             _monitorTimer = new Timer
@@ -46,10 +49,15 @@ namespace Monitor
             var cpuName = _cpu.GetName();
             LoggerHelper.Info($"Sending cpu name: {cpuName}");
             GetManager().PublishMessage(this, "stats/cpu/name", cpuName.ToString());
+
+            _isSendedCPUName = true;
         }
 
         private void TimerElapsed(object sender, ElapsedEventArgs e)
         {
+            if (!_isSendedCPUName)
+                PublishCPUName();
+
             // CPU Clocks
             try
             {
@@ -92,28 +100,6 @@ namespace Monitor
             catch (Exception exception)
             {
                 LoggerHelper.Error("Failed to send cpu temperatures " + exception);
-            }
-
-            // CPU Load
-            try
-            {
-                if (!_config.GetValue("cpu_load", false))
-                    return;
-
-                LoggerHelper.Info($"Sending CPU load");
-
-                var sensors = _cpu.GetLoad();
-                foreach (var keyvalue in sensors)
-                {
-                    var name = keyvalue.Key;
-                    var value = keyvalue.Value;
-
-                    GetManager().PublishMessage(this, _mqttConfig.CpuLoadTopic + name, value);
-                }
-            }
-            catch (Exception exception)
-            {
-                LoggerHelper.Error("Failed to send cpu load " + exception);
             }
 
             // CPU Powers
