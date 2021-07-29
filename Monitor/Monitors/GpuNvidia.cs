@@ -77,5 +77,28 @@ namespace Monitor.Monitors
 
             return readed_sensors;
         }
+
+        public IDictionary<string, string> GetLoad()
+        {
+            _gpu.Update();
+
+            var readed_sensors = new Dictionary<string, string> { };
+            var load_sensors = _gpu?.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
+
+            foreach (var sensor in load_sensors)
+            {
+                var name = sensor.Name;
+                var value = sensor.Value?.ToString("0.#");
+
+                name = name.ToLower().Replace("#", "");
+
+                if (name.Contains("d3d"))
+                    continue;
+
+                readed_sensors.Add(name, value);
+            }
+
+            return readed_sensors;
+        }
     }
 }
