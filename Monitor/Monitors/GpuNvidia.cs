@@ -100,5 +100,25 @@ namespace Monitor.Monitors
 
             return readed_sensors;
         }
+
+        public IDictionary<string, string> GetControls()
+        {
+            _gpu.Update();
+
+            var readed_sensors = new Dictionary<string, string> { };
+            var control_sensors = _gpu?.Sensors.Where(s => s.SensorType == SensorType.Control).ToList();
+
+            foreach (var sensor in control_sensors)
+            {
+                var name = sensor.Name;
+                var value = sensor.Value?.ToString("0.#");
+
+                name = name.ToLower().Replace("#", "");
+
+                readed_sensors.Add(name, value);
+            }
+
+            return readed_sensors;
+        }
     }
 }

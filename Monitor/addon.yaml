@@ -17,3 +17,4 @@ memory_load: true
 gpu_nvidia_clocks: true
 gpu_nvidia_temperatures: true
 gpu_nvidia_load: true
+gpu_nvidia_controls: true
