@@ -19,3 +19,4 @@ gpu_nvidia_temperatures: true
 gpu_nvidia_load: true
 gpu_nvidia_controls: true
 gpu_nvidia_data: true
+gpu_nvidia_throughput: true
