@@ -120,5 +120,28 @@ namespace Monitor.Monitors
 
             return readed_sensors;
         }
+
+        public IDictionary<string, string> GetData()
+        {
+            _gpu.Update();
+
+            var readed_sensors = new Dictionary<string, string> { };
+            var data_sensors = _gpu?.Sensors.Where(s => s.SensorType == SensorType.SmallData).ToList();
+
+            foreach (var sensor in data_sensors)
+            {
+                var name = sensor.Name;
+                var value = sensor.Value?.ToString("0.#");
+
+                name = name.ToLower().Replace("#", "");
+
+                if (name.Contains("d3d"))
+                    continue;
+
+                readed_sensors.Add(name, value);
+            }
+
+            return readed_sensors;
+        }
     }
 }

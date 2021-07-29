@@ -21,7 +21,7 @@ namespace Monitor
         private bool _isSendedCPUName, _isSendedGPUNvidiaName;
         private string _cpuClocksTopic, _cpuTemperaturesTopic, _cpuPowersTopic;
         private string _memoryDataTopic, _memoryLoadTopic;
-        private string _gpuNvidiaClocksTopic, _gpuNvidiaTemperaturesTopic, _gpuNvidiaLoadTopic, _gpuNvidiaControlsTopic;
+        private string _gpuNvidiaClocksTopic, _gpuNvidiaTemperaturesTopic, _gpuNvidiaLoadTopic, _gpuNvidiaControlsTopic, _gpuNvidiaDataTopic;
 
         public override void Init(IAddonManager addonManager)
         {
@@ -62,6 +62,7 @@ namespace Monitor
             _gpuNvidiaTemperaturesTopic = "stats/gpu_nvidia/temperatures/";
             _gpuNvidiaLoadTopic = "stats/gpu_nvidia/load/";
             _gpuNvidiaControlsTopic = "stats/gpu_nvidia/controls/";
+            _gpuNvidiaDataTopic = "stats/gpu_nvidia/data/";
         }
 
         public void PublishCPUName()
@@ -291,6 +292,28 @@ namespace Monitor
             catch (Exception exception)
             {
                 LoggerHelper.Error("Failed to send gpu nvidia controls " + exception);
+            }
+
+            // GPU Nvidia Data
+            try
+            {
+                if (!_config.GetValue("gpu_nvidia_data", false))
+                    return;
+
+                LoggerHelper.Info($"Sending GPU Nvidia data");
+
+                var sensors = _gpuNvidia.GetData();
+                foreach (var keyvalue in sensors)
+                {
+                    var name = keyvalue.Key;
+                    var value = keyvalue.Value;
+
+                    GetManager().PublishMessage(this, _gpuNvidiaDataTopic + name, value);
+                }
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send gpu nvidia data " + exception);
             }
         }
     }
