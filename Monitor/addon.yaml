@@ -8,16 +8,7 @@ file: Monitor.dll
 minApiVersion: 2.2.0
 maxApiVersion: 
 
-cpu_name: true
-cpu_clocks: true
-cpu_temps: true
-cpu_powers: true
-memory_data: true
-memory_load: true
-gpu_nvidia_clocks: true
-gpu_nvidia_temperatures: true
-gpu_nvidia_load: true
-gpu_nvidia_controls: true
-gpu_nvidia_data: true
-gpu_nvidia_throughput: true
+cpu: true
+memory: true
+gpu_nvidia: true
 storages: true

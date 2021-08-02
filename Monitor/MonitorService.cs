@@ -71,11 +71,25 @@ namespace Monitor
             _storagesTopic = "stats/storages/{0}/{1}";
         }
 
+        void TimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            if (_config.GetValue("cpu", false) && !_isSendedCPUName)
+                PublishCPUName();
+            if (_config.GetValue("gpu_nvidia", false) && !_isSendedGPUNvidiaName)
+                PublishGPUNvidiaName();
+
+            if (_config.GetValue("cpu", false))
+                PublishCPU();
+            if (_config.GetValue("memory", false))
+                PublishMemory();
+            if (_config.GetValue("gpu", false))
+                PublishGPU();
+            if (_config.GetValue("storages", false))
+                PublishStorages();
+        }
+
         public void PublishCPUName()
         {
-            if (!_config.GetValue("cpu_name", false))
-                return;
-
             var cpuName = _cpu.GetName();
             LoggerHelper.Info($"Sending cpu name: {cpuName}");
             GetManager().PublishMessage(this, "stats/cpu/name", cpuName.ToString());
@@ -85,9 +99,6 @@ namespace Monitor
 
         public void PublishGPUNvidiaName()
         {
-            if (!_config.GetValue("gpu_nvidia_name", false))
-                return;
-
             var gpuName = _gpuNvidia.GetName();
             LoggerHelper.Info($"Sending gpu nvidia name: {gpuName}");
             GetManager().PublishMessage(this, "stats/gpu_nvidia/name", gpuName.ToString());
@@ -95,21 +106,11 @@ namespace Monitor
             _isSendedGPUNvidiaName = true;
         }
 
-        void TimerElapsed(object sender, ElapsedEventArgs e)
+        void PublishCPU()
         {
-            if (!_isSendedCPUName)
-                PublishCPUName();
-            if (!_isSendedGPUNvidiaName)
-                PublishGPUNvidiaName();
-
             // CPU Clocks
             try
             {
-                if (!_config.GetValue("cpu_clocks", false))
-                    return;
-
-                LoggerHelper.Info($"Sending CPU clocks");
-
                 var sensors = _cpu.GetClocks();
                 foreach (var keyvalue in sensors)
                 {
@@ -127,11 +128,6 @@ namespace Monitor
             // CPU Temperatures
             try
             {
-                if (!_config.GetValue("cpu_temps", false))
-                    return;
-
-                LoggerHelper.Info($"Sending CPU temperatures");
-
                 var sensors = _cpu.GetTemperatures();
                 foreach (var keyvalue in sensors)
                 {
@@ -149,11 +145,6 @@ namespace Monitor
             // CPU Powers
             try
             {
-                if (!_config.GetValue("cpu_powers", false))
-                    return;
-
-                LoggerHelper.Info($"Sending CPU powers");
-
                 var sensors = _cpu.GetPowers();
                 foreach (var keyvalue in sensors)
                 {
@@ -167,15 +158,13 @@ namespace Monitor
             {
                 LoggerHelper.Error("Failed to send powers " + exception);
             }
+        }
 
+        void PublishMemory()
+        {
             // Memory Data
             try
             {
-                if (!_config.GetValue("memory_data", false))
-                    return;
-
-                LoggerHelper.Info($"Sending Memory data");
-
                 var sensors = _memory.GetData();
                 foreach (var keyvalue in sensors)
                 {
@@ -193,11 +182,6 @@ namespace Monitor
             // Memory Load
             try
             {
-                if (!_config.GetValue("memory_load", false))
-                    return;
-
-                LoggerHelper.Info($"Sending Memory load");
-
                 var sensors = _memory.GetLoad();
                 foreach (var keyvalue in sensors)
                 {
@@ -211,15 +195,13 @@ namespace Monitor
             {
                 LoggerHelper.Error("Failed to send memory load " + exception);
             }
+        }
 
+        void PublishGPU()
+        {
             // GPU Nvidia Clocks
             try
             {
-                if (!_config.GetValue("gpu_nvidia_clocks", false))
-                    return;
-
-                LoggerHelper.Info($"Sending GPU Nvidia clocks");
-
                 var sensors = _gpuNvidia.GetClocks();
                 foreach (var keyvalue in sensors)
                 {
@@ -237,11 +219,6 @@ namespace Monitor
             // GPU Nvidia Temperatures
             try
             {
-                if (!_config.GetValue("gpu_nvidia_temperatures", false))
-                    return;
-
-                LoggerHelper.Info($"Sending GPU Nvidia temperatures");
-
                 var sensors = _gpuNvidia.GetTemperatures();
                 foreach (var keyvalue in sensors)
                 {
@@ -259,11 +236,6 @@ namespace Monitor
             // GPU Nvidia Load
             try
             {
-                if (!_config.GetValue("gpu_nvidia_load", false))
-                    return;
-
-                LoggerHelper.Info($"Sending GPU Nvidia load");
-
                 var sensors = _gpuNvidia.GetLoad();
                 foreach (var keyvalue in sensors)
                 {
@@ -281,11 +253,6 @@ namespace Monitor
             // GPU Nvidia Controls
             try
             {
-                if (!_config.GetValue("gpu_nvidia_controls", false))
-                    return;
-
-                LoggerHelper.Info($"Sending GPU Nvidia controls");
-
                 var sensors = _gpuNvidia.GetControls();
                 foreach (var keyvalue in sensors)
                 {
@@ -303,11 +270,6 @@ namespace Monitor
             // GPU Nvidia Data
             try
             {
-                if (!_config.GetValue("gpu_nvidia_data", false))
-                    return;
-
-                LoggerHelper.Info($"Sending GPU Nvidia data");
-
                 var sensors = _gpuNvidia.GetData();
                 foreach (var keyvalue in sensors)
                 {
@@ -325,11 +287,6 @@ namespace Monitor
             // GPU Nvidia Throughput
             try
             {
-                if (!_config.GetValue("gpu_nvidia_throughput", false))
-                    return;
-
-                LoggerHelper.Info($"Sending GPU Nvidia throughput");
-
                 var sensors = _gpuNvidia.GetThroughput();
                 foreach (var keyvalue in sensors)
                 {
@@ -343,19 +300,12 @@ namespace Monitor
             {
                 LoggerHelper.Error("Failed to send gpu nvidia throughput " + exception);
             }
-
-            PublishStorages();
         }
 
         void PublishStorages()
         {
             try
             {
-                if (!_config.GetValue("storages", false))
-                    return;
-
-                LoggerHelper.Info($"Sending storages sensors");
-
                 var all_storages = _storages.GetStorages();
                 foreach (var storage in all_storages)
                 {
