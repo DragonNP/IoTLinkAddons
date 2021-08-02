@@ -56,6 +56,7 @@
     <Compile Include="MonitorService.cs" />
     <Compile Include="Monitors\GpuNvidia.cs" />
     <Compile Include="Monitors\Memory.cs" />
+    <Compile Include="Monitors\Storages.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

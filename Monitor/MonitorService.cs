@@ -17,11 +17,13 @@ namespace Monitor
         private Cpu _cpu;
         private Memory _memory;
         private GpuNvidia _gpuNvidia;
+        private Storages _storages;
 
         private bool _isSendedCPUName, _isSendedGPUNvidiaName;
         private string _cpuClocksTopic, _cpuTemperaturesTopic, _cpuPowersTopic;
         private string _memoryDataTopic, _memoryLoadTopic;
         private string _gpuNvidiaClocksTopic, _gpuNvidiaTemperaturesTopic, _gpuNvidiaLoadTopic, _gpuNvidiaControlsTopic, _gpuNvidiaDataTopic, _gpuNvidiaThroughputTopic;
+        private string _storagesTopic;
 
         public override void Init(IAddonManager addonManager)
         {
@@ -33,6 +35,7 @@ namespace Monitor
             _cpu = new Cpu();
             _memory = new Memory();
             _gpuNvidia = new GpuNvidia();
+            _storages = new Storages();
 
             _monitorTimer = new Timer
             {
@@ -64,6 +67,8 @@ namespace Monitor
             _gpuNvidiaControlsTopic = "stats/gpu_nvidia/controls/";
             _gpuNvidiaDataTopic = "stats/gpu_nvidia/data/";
             _gpuNvidiaThroughputTopic = "stats/gpu_nvidia/throughput/";
+
+            _storagesTopic = "stats/storages/{0}/{1}";
         }
 
         public void PublishCPUName()
@@ -337,6 +342,51 @@ namespace Monitor
             catch (Exception exception)
             {
                 LoggerHelper.Error("Failed to send gpu nvidia throughput " + exception);
+            }
+
+            PublishStorages();
+        }
+
+        void PublishStorages()
+        {
+            try
+            {
+                if (!_config.GetValue("storages", false))
+                    return;
+
+                LoggerHelper.Info($"Sending storages sensors");
+
+                var all_storages = _storages.GetStorages();
+                foreach (var storage in all_storages)
+                {
+                    string name = "", temp = "", used_space = "";
+
+                    foreach (var sensors in storage)
+                    {
+                        var sensorType = sensors.Key;
+                        var value = sensors.Value;
+
+                        switch (sensorType)
+                        {
+                            case SensorStorageType.Name:
+                                name = value;
+                                break;
+                            case SensorStorageType.Temperature:
+                                temp = value;
+                                break;
+                            case SensorStorageType.UsedSpace:
+                                used_space = value;
+                                break;
+                        }
+                    }
+
+                    GetManager().PublishMessage(this, string.Format(_storagesTopic, name, "temperatue"), temp);
+                    GetManager().PublishMessage(this, string.Format(_storagesTopic, name, "used_space"), used_space);
+                }
+            }
+            catch (Exception exception)
+            {
+                LoggerHelper.Error("Failed to send storages sensors " + exception);
             }
         }
     }
