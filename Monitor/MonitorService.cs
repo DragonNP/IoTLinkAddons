@@ -81,7 +81,7 @@ namespace Monitor
                 PublishCPU();
             if (_config.GetValue("memory", false))
                 PublishMemory();
-            if (_config.GetValue("gpu", false))
+            if (_config.GetValue("gpu_nvidia", false))
                 PublishGPU();
             if (_config.GetValue("storages", false))
                 PublishStorages();
