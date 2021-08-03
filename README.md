@@ -10,15 +10,28 @@ CPU:
  - Clocks
  - Temperatures
  - Powers
+GPU Nvidia:
+ - Name
+ - Clocks
+ - Temperatures
+ - Load
+ - Controls
+ - Data
+Memory:
+ - Data
+ - Load
+Storages:
+ - Temperature
+ - Used space
 
 ### Configuration
 Configuration file: %ProgramData%\IOTLink\Addons\Monitor\addon.yaml
 ``` yaml
-# CPU configuration
-cpu_name: true   # Send cpu name to mqtt (sent only once)
-cpu_clocks: true # Send cpu clocks to mqtt
-cpu_temps: true  # Send cpu temperature to mqtt
-cpu_powers: true # Send cpu powers to mqtt
+# Configuration
+cpu: true
+memory: true
+gpu_nvidia: true
+storages: true
 ```
 
 ### Libraries:
