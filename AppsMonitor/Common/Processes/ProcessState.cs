@@ -3,6 +3,6 @@
     public enum ProcessState
     {
         Running,
-        NotRunning
+        NotRunning,
     }
 }

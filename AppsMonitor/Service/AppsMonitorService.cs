@@ -5,10 +5,10 @@ using IOTLinkAPI.Addons;
 using IOTLinkAPI.Configs;
 using IOTLinkAPI.Helpers;
 using IOTLinkAPI.Platform.Events.MQTT;
-using IOTLinkAPI.Platform.HomeAssistant;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Timers;
 
 namespace AppsMonitor
@@ -19,7 +19,7 @@ namespace AppsMonitor
         private Timer _monitorTimer;
         private List<ProcessMonitor> _monitors = new List<ProcessMonitor>();
 
-        private readonly double _timerInterval = 3000;
+        private readonly double _timerInterval = 5000;
         private readonly string PAYLOAD_ON = "ON";
         private readonly string PAYLOAD_OFF = "OFF";
 
@@ -51,7 +51,7 @@ namespace AppsMonitor
                 return;
 
             SetupDiscovery();
-            SetupRequestEvents();
+            SetupMQTTRequestEvents();
             CheckAllMonitors(true);
             StartTimers();
         }
@@ -71,6 +71,13 @@ namespace AppsMonitor
                 try
                 {
                     ProcessMonitor monitor = ProcessMonitor.FromConfiguration(monitorConfiguration);
+
+                    if (monitor.Processes.Count() != 0)
+                    {
+                        foreach (var process in monitor.Processes)
+                            process.Exited += new EventHandler((sender, e) => OnCloseProcessEvent(this, e, monitor));
+                    }
+
                     _monitors.Add(monitor);
                 }
                 catch (Exception ex)
@@ -80,12 +87,13 @@ namespace AppsMonitor
             }
         }
 
-        private void SetupRequestEvents()
+        private void OnCloseProcessEvent(object sender, EventArgs e, ProcessMonitor monitor)
         {
-            foreach (var monitor in _monitors)
-            {
-                GetManager().SubscribeTopic(this, GetSubscribeTopic(monitor), OnSetStateMessage);
-            }
+            StopTimers();
+
+            CheckMonitor(monitor);
+
+            RestartTimers();
         }
 
         private void CheckAllMonitors(bool forceSendState = false)
@@ -110,7 +118,7 @@ namespace AppsMonitor
 
         private void CheckMonitor(ProcessMonitor monitor, bool forceSendState = false)
         {
-            var isUpdated = ProcessHelper.SetProcessState(ref monitor);
+            var isUpdated = ProcessHelper.UpdateState(ref monitor);
 
             if (isUpdated || forceSendState)
                 SendMonitorValue(GetStateTopic(monitor), StateToString(monitor.State));
@@ -134,6 +142,14 @@ namespace AppsMonitor
                     return PAYLOAD_OFF;
                 default:
                     return PAYLOAD_OFF;
+            }
+        }
+
+        private void SetupMQTTRequestEvents()
+        {
+            foreach (var monitor in _monitors)
+            {
+                GetManager().SubscribeTopic(this, GetSubscribeTopic(monitor), OnSetStateMessage);
             }
         }
 
@@ -165,7 +181,7 @@ namespace AppsMonitor
                             ProcessHelper.StartProcess(monitor);
                             break;
                         case "OFF":
-                            ProcessHelper.KillProcess(monitor);
+                            ProcessHelper.KillProcesses(monitor);
                             break;
                     }
                     CheckMonitor(monitor);

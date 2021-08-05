@@ -1,6 +1,7 @@
 ﻿using AppsMonitor.Common.Helpers;
 using AppsMonitor.Common.Processes;
 using IOTLinkAPI.Configs;
+using System.Diagnostics;
 
 namespace AppsMonitor.Common.Configs
 {
@@ -10,7 +11,8 @@ namespace AppsMonitor.Common.Configs
         public string PathToExe { get; set; }
         public string DisplayName { get; set; }
         public ProcessState State { get; set; }
-        public string UserNameRunning { get; set; }
+        public Process[] Processes { get; set; }
+        public void ClearProcesses() => Processes = new Process[0];
 
         public static ProcessMonitor FromConfiguration(Configuration configuration)
         {
@@ -19,10 +21,10 @@ namespace AppsMonitor.Common.Configs
                 ProcessName = configuration.GetValue("process_name", ""),
                 PathToExe = configuration.GetValue("path_to_exe", ""),
                 DisplayName = configuration.GetValue("display_name", ""),
-                UserNameRunning = configuration.GetValue("username_running", ""),
             };
 
-            ProcessHelper.SetProcessState(ref monitor);
+            monitor.Processes = ProcessHelper.GetProcesses(monitor.ProcessName);
+            ProcessHelper.UpdateState(ref monitor);
 
             return monitor;
         }

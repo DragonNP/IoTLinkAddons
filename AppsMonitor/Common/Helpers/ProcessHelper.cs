@@ -9,52 +9,73 @@ namespace AppsMonitor.Common.Helpers
 {
     static class ProcessHelper
     {
-        public static bool SetProcessState(ref ProcessMonitor monitor)
+        public static Process[] GetProcesses(string process_name)
         {
-            Process[] processes = Process.GetProcessesByName(monitor.ProcessName);
+            Process[] processes = Process.GetProcessesByName(process_name);
+            return processes;
+        }
 
-            if (processes.Count() == 0)
+        public static bool UpdateState(ref ProcessMonitor monitor)
+        {
+            bool isUpdated = false;
+
+            if (monitor == null || monitor.Processes == null)
+                return isUpdated;
+
+            if (monitor.Processes.Count() == 0)
+                monitor.Processes = GetProcesses(monitor.ProcessName);
+            if (monitor.Processes.Count() == 0 && monitor.State == ProcessState.Running)
             {
-                if (monitor.State != ProcessState.NotRunning)
+                monitor.State = ProcessState.NotRunning;
+                return true;
+            }
+
+            try
+            {
+                var process = monitor.Processes[0];
+                if (process.HasExited && monitor.State == ProcessState.Running)
                 {
                     monitor.State = ProcessState.NotRunning;
+                    monitor.ClearProcesses();
                     return true;
                 }
-            }
-            else
-            {
-                if (monitor.State != ProcessState.Running)
+                else if (!process.HasExited && monitor.State == ProcessState.NotRunning)
                 {
                     monitor.State = ProcessState.Running;
                     return true;
                 }
             }
+            catch {}
 
-            return false;
+            return isUpdated;
         }
-        public static void StartProcess(ProcessMonitor monitor)
+
+        public static void KillProcesses(ProcessMonitor monitor)
         {
             if (monitor == null)
                 return;
+            if (monitor.Processes.Count() == 0)
+                monitor.Processes = GetProcesses(monitor.ProcessName);
 
+            foreach (var process in monitor.Processes)
+                process.Kill();
+
+            monitor.ClearProcesses();
+        }
+
+        public static void StartProcess(ProcessMonitor monitor)
+        {
+            if (monitor == null || string.IsNullOrEmpty(monitor.PathToExe))
+                return;
+
+            LoggerHelper.Info("ProcessHelper.StartProcess({0}): start process path:{1}", monitor.DisplayName, monitor.PathToExe);
             RunInfo runInfo = new RunInfo
             {
                 Application = monitor.PathToExe
             };
-
             PlatformHelper.Run(runInfo);
-
-        }
-
-        public static void KillProcess(ProcessMonitor monitor)
-        {
-            if (monitor == null)
-                return;
-
-            Process[] processes = Process.GetProcessesByName(monitor.ProcessName);
-
-            if (processes.Count() != 0)
-                processes[0].Kill();
+            
+            monitor.Processes = GetProcesses(monitor.ProcessName);
         }
     }
 }

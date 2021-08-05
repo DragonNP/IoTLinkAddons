@@ -13,9 +13,7 @@ monitors:
     process_name: steam
     path_to_exe: E:\Game\Steam\steam.exe
     display_name: Steam
-    username_running: DragonNP
   Edge:
     process_name: msedge
     path_to_exe: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
     display_name: Edge
-    username_running: DragonNP
