@@ -5,6 +5,7 @@ using IOTLinkAPI.Addons;
 using IOTLinkAPI.Configs;
 using IOTLinkAPI.Helpers;
 using IOTLinkAPI.Platform.Events.MQTT;
+using IOTLinkAPI.Platform.HomeAssistant;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,7 +31,6 @@ namespace AppsMonitor
             var cfgManager = ConfigurationManager.GetInstance();
             var _configPath = Path.Combine(_currentPath, "addon.yaml");
             _config = cfgManager.GetConfiguration(_configPath);
-
             Restart();
         }
 
@@ -50,6 +50,8 @@ namespace AppsMonitor
             if (!IsAddonEnabled())
                 return;
 
+            LoggerHelper.Info("Restarting");
+
             SetupDiscovery();
             SetupMQTTRequestEvents();
             CheckAllMonitors(true);
@@ -58,6 +60,8 @@ namespace AppsMonitor
 
         private void SetupDiscovery()
         {
+            LoggerHelper.Info("Setup discovery");
+
             List<Configuration> monitorConfigurations = _config.GetConfigurationList("monitors");
 
             if (monitorConfigurations == null || monitorConfigurations.Count == 0)
@@ -78,6 +82,18 @@ namespace AppsMonitor
                             process.Exited += new EventHandler((sender, e) => OnCloseProcessEvent(this, e, monitor));
                     }
 
+
+                    HassDiscoveryOptions discoveryOptions = new HassDiscoveryOptions
+                    {
+                        Id = monitor.ProcessName,
+                        Name = monitor.DisplayName,
+                        Icon = "mdi:apps-box",
+                        DeviceClass = "running",
+                        Component = HomeAssistantComponent.BinarySensor
+
+                    };
+
+                    GetManager().PublishDiscoveryMessage(this, GetStateTopic(monitor), "Apps", discoveryOptions);
                     _monitors.Add(monitor);
                 }
                 catch (Exception ex)
@@ -89,6 +105,8 @@ namespace AppsMonitor
 
         private void OnCloseProcessEvent(object sender, EventArgs e, ProcessMonitor monitor)
         {
+            LoggerHelper.Info("Process closed: " + monitor.DisplayName);
+
             StopTimers();
 
             CheckMonitor(monitor);
@@ -98,6 +116,8 @@ namespace AppsMonitor
 
         private void CheckAllMonitors(bool forceSendState = false)
         {
+            LoggerHelper.Info("Check all apps");
+
             StopTimers();
 
             foreach (ProcessMonitor monitor in _monitors)
@@ -118,6 +138,8 @@ namespace AppsMonitor
 
         private void CheckMonitor(ProcessMonitor monitor, bool forceSendState = false)
         {
+            LoggerHelper.Info("Check monitor: " + monitor.DisplayName);
+
             var isUpdated = ProcessHelper.UpdateState(ref monitor);
 
             if (isUpdated || forceSendState)
@@ -126,6 +148,8 @@ namespace AppsMonitor
 
         private void SendMonitorValue(string topic, string value)
         {
+            LoggerHelper.Info("Send topic: " + topic + " value: " + value);
+
             if (string.IsNullOrWhiteSpace(topic))
                 return;
 
